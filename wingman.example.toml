@@ -1,0 +1,54 @@
+# Copy to wingman.toml and edit.
+
+[profile]
+blog_url = ""               # e.g. https://example.com/blog
+blog_max_pages = 15         # how many blog posts to read when building the profile
+pages = []                  # background pages read as-is, e.g. ["https://example.com/about"]
+files = []                  # local .pdf/.md/.txt, e.g. ["data/linkedin.pdf"] (LinkedIn: More -> Save to PDF)
+link_blog = "when_directly_relevant"   # never | when_directly_relevant
+
+[llm]
+model = "claude-opus-5-5"           # stats insights (default for anything not listed below)
+rank_model = "claude-haiku-5-5"    # scoring threads in `wingman scan`
+profile_model = "claude-sonnet-5-5" # profile build (medium effort)
+extract_model = "claude-haiku-5-5"  # reading a copied thread page (wingman draft)
+draft_model = "claude-sonnet-5-5"   # writing reply drafts
+effort = "medium"                   # low | medium | high
+
+[drafting]
+drafts = 2                  # drafts per thread (press r for another); fewer = cheaper
+excerpts = 4                # passages from your own writing given to each draft
+embed_model = "nomic-embed-text"   # local Ollama model for semantic search; "none" = keyword only
+index_max_posts = 50        # blog posts to index (free; no Claude calls)
+# Weighting is a tie-breaker: a precise match in an old post still beats a vague match in a new one.
+recency_half_life_years = 5 # a post this old counts half as much as a new one
+recency_floor = 0.6         # ...but never less than this
+project_boost = 1.2         # GitHub repos and project sites count this much more
+rank_fusion_k = 10          # lower = relevance rank matters more relative to the weights above
+max_draft_chars = 1500      # comments, not articles: drafts are written to this limit and posting is blocked above it
+ask_rating = true           # rate drafts 1-5 after each thread (enter skips); see `wingman quality`
+
+[pacing]
+max_per_hour = 3            # across all sources on a platform
+max_per_day = 12
+max_per_source_per_day = 3  # e.g. per subreddit
+min_gap_minutes = 10
+
+[platforms.reddit]
+enabled = true
+sources = ["python", "learnprogramming"]   # subreddits, without r/
+keywords = []               # optional extra terms that boost a thread
+max_age_hours = 12          # ignore threads older than this
+per_source_limit = 25       # posts fetched per listing (new + rising)
+
+[platforms.bluesky]
+enabled = true
+# Search queries ("debezium", "#java", "feature flags") or custom feed URIs (at://...).
+# Each is also a pacing "source": max_per_source_per_day applies per query.
+sources = [
+    "debezium", "kafka connect", "feature flags", "feature toggles",
+    "spring boot", "spring ai", "pgvector", "RAG hallucination", "alfresco",
+]
+languages = ["en"]          # skip posts tagged with other languages
+max_age_hours = 24          # Bluesky moves slower than Reddit's rising threads
+per_source_limit = 25       # posts fetched per query

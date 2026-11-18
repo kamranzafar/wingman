@@ -1,0 +1,47 @@
+[project]
+name = "wingman"
+version = "0.1.0"
+description = "A human-in-the-loop social copilot: finds threads that match your interests and drafts replies for you to review."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=2.10",
+    "praw>=7.8",
+    "typer>=0.12",
+    "rich>=13.7",
+    "pydantic>=2.7",
+    "python-dotenv>=1.0",
+    "beautifulsoup4>=4.12",
+    "certifi>=2024.2",
+    "pypdf>=4.0",
+]
+
+[project.scripts]
+wingman = "wingman.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.ruff]
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "BLE", "UP", "SIM", "RUF"]
+ignore = [
+    "B008",    # typer.Option(...) in argument defaults is the typer idiom
+    "SIM905",  # a block of words + .split() reads better than a long list of quoted strings
+    "RUF001",  # deliberate typographic characters in user-facing strings
+    "RUF002",
+    "RUF003",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wingman"]
