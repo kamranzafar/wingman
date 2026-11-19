@@ -17,7 +17,7 @@ from rich.markup import escape
 
 from wingman import ui, views
 from wingman.core.models import Reply, now_utc
-from wingman.errors import NotReadyError, WingmanError
+from wingman.errors import ConfigError, NotReadyError, WingmanError
 from wingman.services import Services
 from wingman.ui import console
 
@@ -264,8 +264,15 @@ def scan(
     page_size: int = typer.Option(None, "--page-size", help="Results per page (default: what fits your terminal)."),
     rerank: bool = typer.Option(False, "--rerank", help="Rank already-seen posts again (e.g. after updating your "
                                                        "profile). Posts you skipped, queued or posted are left alone."),
+    topics: list[str] = typer.Option(None, "--topic", "-t", help="Scan this instead of the configured sources "
+                                     "(repeat for more): a search term, #hashtag, owner/repo or subreddit, "
+                                     "depending on the platform."),
 ):
-    """Find new posts on your topics and rank them against your profile."""
+    """Find new posts on your topics and rank them against your profile.
+
+    Examples: [accent]wingman scan -p bluesky -t "outbox pattern" -t debezium[/],
+    [accent]wingman scan -p mastodon -t "#kafka"[/], [accent]wingman scan -p github -t quarkusio/quarkus[/]
+    """
     from wingman.core.ranker import rank
 
     svc = _services()
@@ -276,9 +283,13 @@ def scan(
     now = now_utc()
     since = now - timedelta(hours=settings.get("max_age_hours", 12))
     hours = settings.get("max_age_hours", 12)
-    ui.heading(f"Scanning {platform}", f"{len(settings['sources'])} sources · last {hours}h")
+    sources = [t.strip() for t in topics or [] if t.strip()] or settings.get("sources", [])
+    if not sources:
+        raise ConfigError(f"Nothing to scan: pass --topic, or set sources in [platforms.{platform}] in wingman.toml.")
+    where = ", ".join(sources) if topics else f"{len(sources)} sources"
+    ui.heading(f"Scanning {platform}", f"{where} · last {hours}h")
     with console.status("Searching…"):
-        threads = plat.discover(settings["sources"], since, settings.get("per_source_limit", 25))
+        threads = plat.discover(sources, since, settings.get("per_source_limit", 25))
     known = svc.store.known_keys(platform, acted_on_only=rerank)
     fresh = [t for t in threads if t.key not in known]
     ranked = []

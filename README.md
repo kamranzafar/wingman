@@ -65,6 +65,7 @@ never your main password) to `.env` as `BLUESKY_HANDLE` / `BLUESKY_APP_PASSWORD`
 ```bash
 uv run wingman check -p bluesky                          # can it log in and read?
 uv run wingman scan -p bluesky                           # search your topics, rank posts (Haiku)
+uv run wingman scan -p bluesky -t "outbox pattern"      # one-off topics instead of your sources
 uv run wingman review -p bluesky                         # draft, edit, post what you approve
 uv run wingman draft https://bsky.app/profile/x/post/y   # one post: no copy-paste needed
 ```
