@@ -1,8 +1,8 @@
 # wingman
 
 A terminal copilot for online communities. It finds threads where you can add something real,
-drafts replies in your voice, and posts **only what you approve**. Reddit is supported today; the
-platform adapter design (`src/wingman/platforms/`) leaves room for Bluesky, X and Stack Overflow.
+drafts replies in your voice, and posts **only what you approve**. It works with Reddit, Bluesky and
+Mastodon; each platform is an adapter in `src/wingman/platforms/`, so more can be added.
 
 ## Setup
 
@@ -71,6 +71,24 @@ uv run wingman draft https://bsky.app/profile/x/post/y   # one post: no copy-pas
 
 Sources in `[platforms.bluesky]` are search queries or custom feed URIs. Replies are capped at
 Bluesky's 300 characters, links become clickable automatically, and pacing limits apply as usual.
+
+### Mastodon
+
+Also the full loop. Set `instance` in `[platforms.mastodon]` to your server, then create a token
+there (Preferences → Development → New application, scopes `read` and `write:statuses`) and add it
+to `.env` as `MASTODON_ACCESS_TOKEN`:
+
+```bash
+uv run wingman check -p mastodon                         # can it read your instance?
+uv run wingman scan -p mastodon                          # hashtags / home timeline, ranked
+uv run wingman review -p mastodon                        # draft, edit, post what you approve
+uv run wingman draft https://fosstodon.org/@x/123        # a post from any instance
+```
+
+Sources are hashtags (`#java`, the reliable option), `@home` (people you follow), `@local` (your
+instance), or plain words (full-text search, which only covers people who opted in to it). Bots,
+boosts and replies are skipped. Replies start with the author's `@mention` so they're notified, and
+count length the way Mastodon does (links are 23 characters).
 
 ### API mode
 

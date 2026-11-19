@@ -52,3 +52,16 @@ sources = [
 languages = ["en"]          # skip posts tagged with other languages
 max_age_hours = 24          # Bluesky moves slower than Reddit's rising threads
 per_source_limit = 25       # posts fetched per query
+
+[platforms.mastodon]
+enabled = true
+instance = "https://fosstodon.org"   # your own instance; the token in .env belongs to it
+# Hashtags ("#java") are the reliable source. "@home" = people you follow, "@local" = your instance.
+# Plain words use full-text search, which only finds posts from people who opted in to being searchable.
+sources = ["#java", "#springboot", "#kafka", "#postgresql", "#featureflags"]
+languages = ["en"]          # skip posts tagged with other languages
+max_age_hours = 24
+per_source_limit = 40       # posts fetched per source (40 per request)
+# visibility = "public"     # or "unlisted" to keep replies off public timelines
+# max_characters = 500      # raise if your instance allows longer posts
+# include_bots = false      # automated accounts (news feeds, RSS mirrors) are skipped by default
