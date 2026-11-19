@@ -56,7 +56,7 @@ def collect(cfg: Config, *, max_posts: int, include_files: bool, progress: Progr
     home_host = urlsplit(p.blog_url).netloc
     today = now_utc().date().isoformat()
     for url in p.pages:
-        # Pages on your own site describe you; pages elsewhere are your projects (e.g. halyx.dev).
+        # Pages on your own site describe you; pages elsewhere are your projects (e.g. a product site).
         kind = "page" if urlsplit(url).netloc == home_host else "project"
         try:
             out.background.append(fetch_page(url, kind=kind, date=today))

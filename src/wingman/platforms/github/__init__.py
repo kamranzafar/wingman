@@ -5,6 +5,8 @@ Credentials: GITHUB_TOKEN in .env (a classic token with the `public_repo` scope)
 
 from __future__ import annotations
 
+SETTINGS = frozenset({"skip_answered"})  # keys beyond platforms.COMMON
+
 
 def create(settings: dict):
     from wingman.platforms.github.api import GitHubDiscussionsPlatform

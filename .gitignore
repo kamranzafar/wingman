@@ -7,3 +7,7 @@ wingman.toml
 .pytest_cache/
 .ruff_cache/
 .DS_Store
+
+# local tooling
+graphify-out/
+dist/

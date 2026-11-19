@@ -13,14 +13,14 @@ from wingman.sources.web import extract_text, post_links, url_date
 def test_url_date():
     assert url_date("https://x.org/blog/2026/10/30/feature-toggles/") == "2026-10-30"
     assert url_date("https://x.org/2016/08/spring-boot/") == "2016-08-01"
-    assert url_date("https://halyx.dev/") == ""
+    assert url_date("https://cloudkit.dev/") == ""
 
 
 def test_extract_text_uses_a_single_article_but_main_for_card_layouts():
     post = "<html><title>T</title><body><nav>menu</nav><article>Post body</article><aside>x</aside></body></html>"
     assert extract_text(post) == ("T", "Post body")
-    cards = "<html><body><main><h1>Halyx</h1><article>Card 1</article><article>Card 2</article></main></body></html>"
-    assert extract_text(cards)[1] == "Halyx\nCard 1\nCard 2"
+    cards = "<html><body><main><h1>Cloudkit</h1><article>Card 1</article><article>Card 2</article></main></body></html>"
+    assert extract_text(cards)[1] == "Cloudkit\nCard 1\nCard 2"
 
 
 def test_post_links_skips_tags_feeds_assets_and_other_sites():

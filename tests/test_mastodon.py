@@ -39,15 +39,15 @@ class FakeClient:
 
 def test_html_to_text_keeps_paragraphs_full_links_mentions_and_hashtags():
     html = ('<p>Hi <span class="h-card"><a href="https://h.io/@bob" class="u-url mention">@<span>bob</span></a>'
-            '</span> see <a href="https://kamranzafar.org/blog/flags/" rel="nofollow">'
-            '<span class="invisible">https://</span><span class="ellipsis">kamranzafar.org/blo</span>'
+            '</span> see <a href="https://example.com/blog/flags/" rel="nofollow">'
+            '<span class="invisible">https://</span><span class="ellipsis">example.com/blog/f</span>'
             '<span class="invisible">g/flags/</span></a></p><p>line<br />two &amp; more '
             '<a href="https://h.io/tags/java" class="mention hashtag">#<span>java</span></a></p>')
-    assert html_to_text(html) == "Hi @bob see https://kamranzafar.org/blog/flags/\n\nline\ntwo & more #java"
+    assert html_to_text(html) == "Hi @bob see https://example.com/blog/flags/\n\nline\ntwo & more #java"
 
 
 def test_status_length_counts_links_as_23_and_remote_mentions_by_username():
-    assert status_length("see https://kamranzafar.org/a/very/long/path/that/goes/on/and/on") == 4 + 23
+    assert status_length("see https://example.com/a/very/long/path/that/goes/on/and/on") == 4 + 23
     assert status_length("@bob@hachyderm.io hi") == len("@bob hi")
 
 
@@ -112,10 +112,10 @@ def test_submit_does_not_double_the_mention():
 def test_publish_appends_the_link_once_for_the_preview_card():
     client = FakeClient({})
     plat = MastodonPlatform({"visibility": "unlisted"}, client=client)
-    plat.publish("New post on flags", LinkCard("https://kamranzafar.org/blog/flags/", "Flags"))
-    plat.publish("Read https://kamranzafar.org/blog/flags/", LinkCard("https://kamranzafar.org/blog/flags/", "Flags"))
-    assert client.calls[0][1]["status"] == "New post on flags\n\nhttps://kamranzafar.org/blog/flags/"
-    assert client.calls[1][1]["status"] == "Read https://kamranzafar.org/blog/flags/"
+    plat.publish("New post on flags", LinkCard("https://example.com/blog/flags/", "Flags"))
+    plat.publish("Read https://example.com/blog/flags/", LinkCard("https://example.com/blog/flags/", "Flags"))
+    assert client.calls[0][1]["status"] == "New post on flags\n\nhttps://example.com/blog/flags/"
+    assert client.calls[1][1]["status"] == "Read https://example.com/blog/flags/"
     assert client.calls[0][1]["visibility"] == "unlisted"
 
 
@@ -138,7 +138,7 @@ def test_constraints_leave_room_for_the_mention():
 
 
 def test_status_urls_from_any_instance_map_to_mastodon():
-    assert platform_for_url("https://fosstodon.org/@kamran/113456789012345678") == "mastodon"
+    assert platform_for_url("https://fosstodon.org/@someone/113456789012345678") == "mastodon"
     assert platform_for_url("https://hachyderm.io/@bob@infosec.exchange/1234") == "mastodon"
     assert platform_for_url("https://bsky.app/profile/x/post/y") == "bluesky"
     assert platform_for_url("https://example.com/blog/post") is None

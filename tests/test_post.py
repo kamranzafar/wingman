@@ -12,7 +12,7 @@ from wingman.platforms.bluesky.api import BlueskyPlatform
 from wingman.platforms.reddit.paste import RedditPastePlatform
 from wingman.sources.web import link_card
 
-ARTICLE_URL = "https://kamranzafar.org/blog/2026/10/30/feature-toggles-in-java-without-the-if-else/"
+ARTICLE_URL = "https://example.com/blog/2026/10/30/feature-toggles-in-java-without-the-if-else/"
 
 
 def test_publish_creates_a_top_level_post_with_link_card_and_clickable_link():
@@ -55,8 +55,8 @@ class RecordingLLM:
 def test_composer_shares_the_article_and_skips_it_from_excerpts():
     article = Document("Feature Toggles in Java", "At ACME we routed every toggle through one class. " * 5,
                        "blog", url=ARTICLE_URL)
-    index = Index.build([article, Document("flipjack", "Proxy-based feature toggle routing for Java. " * 5,
-                                           "github", url="https://github.com/kamranzafar/flipjack")], embedder=None)
+    index = Index.build([article, Document("togglekit", "Proxy-based feature toggle routing for Java. " * 5,
+                                           "github", url="https://github.com/example/togglekit")], embedder=None)
     llm = RecordingLLM()
     options = DraftingOptions(num_drafts=2, private_terms=("ACME",), max_chars=1500)
     composer = Composer(llm, "Summary.", Constraints(max_length=300), options, index=index, article=article)
@@ -66,7 +66,7 @@ def test_composer_shares_the_article_and_skips_it_from_excerpts():
     assert f"Include this exact URL once in every draft: {ARTICLE_URL}" in prompt
     assert "about 255 characters; never more than 300" in system and "INCLUDING any link" in system
     assert "ACME" not in prompt + system
-    assert result.sources == ["flipjack"]  # the article itself isn't repeated as an excerpt
+    assert result.sources == ["togglekit"]  # the article itself isn't repeated as an excerpt
     assert llm.kwargs["task"] == "draft"
 
 

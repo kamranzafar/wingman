@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import os
 import re
 from collections import Counter
 from dataclasses import asdict, dataclass
@@ -19,7 +20,15 @@ from wingman.core.models import Document
 
 log = logging.getLogger(__name__)
 
-OLLAMA_URL = "http://localhost:11434"
+DEFAULT_OLLAMA = "http://localhost:11434"
+
+
+def ollama_url() -> str:
+    """$OLLAMA_HOST (the variable Ollama itself uses, e.g. "gpu-box:11434"), else localhost."""
+    host = os.environ.get("OLLAMA_HOST", "").strip().rstrip("/")
+    if not host or host.startswith("0.0.0.0"):  # 0.0.0.0 is a bind address, not one to connect to
+        return DEFAULT_OLLAMA
+    return host if "://" in host else f"http://{host}"
 EMBED_BATCH = 32
 TOKEN = re.compile(r"[a-z0-9][a-z0-9_.+#-]*[a-z0-9+#]|[a-z0-9]")
 STOP = frozenset("""
@@ -86,9 +95,9 @@ def chunk_text(text: str, max_chars: int = 1000, overlap: int = 150, min_chars: 
 class OllamaEmbedder:
     """Local embeddings via Ollama. Methods return None when Ollama isn't usable (not running, model not pulled)."""
 
-    def __init__(self, model: str, url: str = OLLAMA_URL):
+    def __init__(self, model: str, url: str | None = None):
         self.model = model
-        self.url = url
+        self.url = url or ollama_url()
 
     def _embed(self, texts: list[str], prefix: str) -> list[list[float]] | None:
         try:

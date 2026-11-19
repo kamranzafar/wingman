@@ -147,7 +147,7 @@ def test_a_longer_rewrite_is_never_used(thread):
 
 def test_links_are_taken_out_of_the_word_budget():
     from wingman.core.drafter import _shorten_brief, prose_budget
-    url = "https://kamranzafar.org/blog/2026/10/30/feature-toggles-in-java-without-the-if-else/"
+    url = "https://example.com/blog/2026/10/30/feature-toggles-in-java-without-the-if-else/"
     text = "w" * 230 + " " + url
     assert prose_budget(300, text) == 300 - len(url) - 1
     brief = _shorten_brief(text, 300, len)

@@ -1,80 +1,112 @@
-# Copy to wingman.toml and edit.
+# wingman configuration. `wingman init` copies this to wingman.toml; edit that copy.
+# Secrets (API keys, tokens, passwords) go in .env, never here. Unknown keys are reported as errors.
+
+# Platform used when a command gets no --platform. Empty = the first enabled [platforms.*] section below.
+default_platform = ""
 
 [profile]
-blog_url = ""               # e.g. https://example.com/blog
+# What wingman reads to learn your interests, expertise and writing voice (`wingman profile build`)
+# and to quote your own writing in drafts (`wingman index`). Set at least one of blog_url, pages or files.
+blog_url = ""               # e.g. "https://example.com/blog"
 blog_max_pages = 15         # how many blog posts to read when building the profile
 pages = []                  # background pages read as-is, e.g. ["https://example.com/about"]
-files = []                  # local .pdf/.md/.txt, e.g. ["data/linkedin.pdf"] (LinkedIn: More -> Save to PDF)
-link_blog = "when_directly_relevant"   # never | when_directly_relevant
+files = []                  # local .pdf/.md/.txt, e.g. ["data/cv.pdf"] (LinkedIn: More -> Save to PDF)
+github = ""                 # your GitHub username: public repos and READMEs count as evidence of what you build
+github_max_repos = 10       # most recently pushed, non-fork, non-archived repos to read
+link_blog = "when_directly_relevant"   # never | when_directly_relevant: may drafts link your blog posts?
+private_terms = []          # names to keep private (employer, clients, products): replaced before ranking and
+                            # drafting prompts, masked in `profile show`, and posting is blocked if a draft
+                            # contains one. `profile build` still reads your sources as they are.
 
 [llm]
-model = "claude-opus-5-5"           # stats insights (default for anything not listed below)
-rank_model = "claude-haiku-5-5"    # scoring threads in `wingman scan`
-profile_model = "claude-sonnet-5-5" # profile build (medium effort)
-extract_model = "claude-haiku-5-5"  # reading a copied thread page (wingman draft)
+# Claude models per task. Cheaper models handle the high-volume, simple work.
+model = "claude-opus-5-5"           # stats insights, and any task not listed below
+rank_model = "claude-haiku-5-5"     # scoring posts in `wingman scan`
+profile_model = "claude-sonnet-5-5" # `wingman profile build`
+extract_model = "claude-haiku-5-5"  # reading a copied thread page (`wingman draft`, Reddit paste mode)
 draft_model = "claude-sonnet-5-5"   # writing reply drafts
-effort = "medium"                   # low | medium | high
+effort = "medium"                   # low | medium | high | xhigh | max
 
 [drafting]
-drafts = 2                  # drafts per thread (press r for another); fewer = cheaper
-excerpts = 4                # passages from your own writing given to each draft
-embed_model = "nomic-embed-text"   # local Ollama model for semantic search; "none" = keyword only
+drafts = 2                  # drafts per thread, 1-4 (press r for another); fewer = cheaper
+excerpts = 4                # passages from your own writing given to each draft, 0-12
+embed_model = "nomic-embed-text"   # local Ollama model for semantic search; "none" = keyword search only
 index_max_posts = 50        # blog posts to index (free; no Claude calls)
 # Weighting is a tie-breaker: a precise match in an old post still beats a vague match in a new one.
 recency_half_life_years = 5 # a post this old counts half as much as a new one
 recency_floor = 0.6         # ...but never less than this
 project_boost = 1.2         # GitHub repos and project sites count this much more
 rank_fusion_k = 10          # lower = relevance rank matters more relative to the weights above
-max_draft_chars = 1500      # comments, not articles: drafts are written to this limit and posting is blocked above it
+max_draft_chars = 1500      # comments, not articles: drafts are written to this limit, posting is blocked above it
 ask_rating = true           # rate drafts 1-5 after each thread (enter skips); see `wingman quality`
 
 [pacing]
+# Hard limits, per platform, on what you can post through wingman.
 max_per_hour = 3            # across all sources on a platform
 max_per_day = 12
-max_per_source_per_day = 3  # e.g. per subreddit
-min_gap_minutes = 10
+max_per_source_per_day = 3  # per subreddit / search / hashtag / repo
+min_gap_minutes = 10        # between any two posts
 
-[platforms.reddit]
-enabled = true
-sources = ["python", "learnprogramming"]   # subreddits, without r/
-keywords = []               # optional extra terms that boost a thread
-max_age_hours = 12          # ignore threads older than this
-per_source_limit = 25       # posts fetched per listing (new + rising)
+# ------------------------------------------------------------------------------------------------
+# Platforms. Enable the ones you use (enabled = true). Every section accepts:
+#   sources           what to scan (meaning depends on the platform; each is a pacing "source")
+#   keywords          extra terms that boost a post's score when it mentions them
+#   max_age_hours     ignore posts older than this
+#   per_source_limit  posts fetched per source
+# `wingman scan --topic X` scans X instead of `sources` for one run.
+# ------------------------------------------------------------------------------------------------
 
 [platforms.bluesky]
-enabled = true
-# Search queries ("debezium", "#java", "feature flags") or custom feed URIs (at://...).
-# Each is also a pacing "source": max_per_source_per_day applies per query.
-sources = [
-    "debezium", "kafka connect", "feature flags", "feature toggles",
-    "spring boot", "spring ai", "pgvector", "RAG hallucination", "alfresco",
-]
-languages = ["en"]          # skip posts tagged with other languages
-max_age_hours = 24          # Bluesky moves slower than Reddit's rising threads
-per_source_limit = 25       # posts fetched per query
+# Full loop: scan, draft, post. Needs BLUESKY_HANDLE and BLUESKY_APP_PASSWORD in .env.
+enabled = false
+sources = ["python asyncio", "#rustlang", "postgres performance", "kubernetes operators"]
+                            # search queries, #hashtags, or custom feed URIs (at://...)
+keywords = []
+languages = ["en"]          # skip posts tagged with other languages; [] = any
+max_age_hours = 24
+per_source_limit = 25
+# service = "https://bsky.social"   # your PDS, if you self-host
 
 [platforms.mastodon]
-enabled = true
-instance = "https://fosstodon.org"   # your own instance; the token in .env belongs to it
-# Hashtags ("#java") are the reliable source. "@home" = people you follow, "@local" = your instance.
-# Plain words use full-text search, which only finds posts from people who opted in to being searchable.
-sources = ["#java", "#springboot", "#kafka", "#postgresql", "#featureflags"]
-languages = ["en"]          # skip posts tagged with other languages
+# Full loop: scan, draft, post. Needs MASTODON_ACCESS_TOKEN (from this instance) in .env.
+enabled = false
+instance = "https://mastodon.social"   # your own server
+sources = ["#python", "#rust", "#postgresql", "#kubernetes"]
+                            # #hashtags (reliable), "@home" (people you follow), "@local" (your server),
+                            # or plain words (full-text search only covers people who opted in to it)
+keywords = []
+languages = ["en"]          # skip posts tagged with other languages; [] = any
 max_age_hours = 24
-per_source_limit = 40       # posts fetched per source (40 per request)
-# visibility = "public"     # or "unlisted" to keep replies off public timelines
+per_source_limit = 40       # Mastodon returns at most 40 per request
+# visibility = "public"     # or "unlisted" to keep your replies off public timelines
 # max_characters = 500      # raise if your instance allows longer posts
 # include_bots = false      # automated accounts (news feeds, RSS mirrors) are skipped by default
 
 [platforms.github]
-enabled = true
-# GitHub Discussions. Repos ("owner/name") or discussion searches ("pgvector", "org:apache kafka").
-# Each repo is a pacing "source": max_per_source_per_day applies per repo.
-# Many big projects (spring-boot, kafka, debezium, pgvector) don't use Discussions; wingman warns if one is off.
-sources = [
-    "spring-projects/spring-ai", "langchain4j/langchain4j", "quarkusio/quarkus",
-    "testcontainers/testcontainers-java", "Unleash/unleash", "Flagsmith/flagsmith",
-]
-max_age_hours = 336         # two weeks: discussions are slow, and an unanswered question stays worth answering
-per_source_limit = 30       # discussions fetched per source
+# GitHub Discussions. Full loop: scan, draft, comment (it never opens new discussions).
+# Needs GITHUB_TOKEN in .env, or a logged-in GitHub CLI (`gh auth login`).
+enabled = false
+sources = ["fastapi/fastapi", "pydantic/pydantic", "vercel/next.js", "tailwindlabs/tailwindcss"]
+                            # repos ("owner/name") or discussion searches ("org:apache kafka").
+                            # Many projects don't use Discussions; wingman warns about those.
+keywords = []
+max_age_hours = 336         # two weeks: discussions move slowly, and an open question stays worth answering
+per_source_limit = 30
 # skip_answered = true      # leave out Q&A discussions that already have a marked answer
+
+[platforms.reddit]
+# Reddit needs API approval, and blocks non-browser feed readers, so it has three modes:
+#   "paste"  (default) no Reddit access: copy a thread in your browser, run `wingman draft <url>`,
+#            then paste the reply yourself. No scanning.
+#   "api"    scan, draft and post through the official API. Needs approval under Reddit's Responsible
+#            Builder Policy, plus REDDIT_CLIENT_ID / _SECRET / _USERNAME / _PASSWORD in .env.
+#   "manual" RSS feeds + posting from your browser. Reddit currently blocks it for non-browser clients.
+enabled = false
+mode = "paste"
+sources = ["python", "learnprogramming"]   # subreddits, without r/ ("api"/"manual" modes).
+                            # "manual" also takes "@frontpage" (needs REDDIT_FRONTPAGE_FEED) and "-sub" to exclude
+keywords = []
+max_age_hours = 12
+per_source_limit = 25       # posts fetched per listing
+# listings = ["new", "rising"]      # "manual" mode: which listings to read
+# request_delay_seconds = 2.0       # "manual" mode: pause between feed requests

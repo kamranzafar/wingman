@@ -81,7 +81,7 @@ class BlueskyPlatform:
 
     # ------------------------------------------------------------ Platform
     def discover(self, sources: list[str], since: datetime, limit: int) -> list[Thread]:
-        """Sources are search queries ("debezium", "#java", "feature flags") or custom feed URIs (at://...)."""
+        """Sources are search queries ("python asyncio", "#rustlang") or custom feed URIs (at://...)."""
         seen: dict[str, Thread] = {}
         for source in sources:
             if source.startswith("at://"):

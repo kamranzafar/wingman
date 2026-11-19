@@ -1,6 +1,10 @@
-"""Typed configuration: wingman.toml + .env, loaded from the working directory (or WINGMAN_HOME).
+"""Typed configuration: wingman.toml + .env, plus the data/ directory, all in one "home" directory.
 
-Every default lives here, once. Unknown keys and invalid values are reported instead of ignored.
+Home is, in order: $WINGMAN_HOME; the current directory if it has a wingman.toml; your user config
+directory (~/.config/wingman, or $XDG_CONFIG_HOME/wingman) if it has one; else the current directory.
+
+Every default lives here, once. Unknown keys and invalid values are reported instead of ignored
+(platform sections are checked by the platform registry, since each adapter has its own options).
 """
 
 from __future__ import annotations
@@ -69,6 +73,7 @@ class PacingSettings(_Section):
 
 
 class Settings(_Section):
+    default_platform: str = ""    # used when a command gets no --platform; else the first enabled platform
     profile: ProfileSettings = ProfileSettings()
     llm: LLMSettings = LLMSettings()
     drafting: DraftingSettings = DraftingSettings()
@@ -96,14 +101,44 @@ class Config:
             raise ConfigError(f"Platform '{name}' is disabled in wingman.toml")
         return settings
 
+    def platform_name(self, name: str | None) -> str:
+        """--platform if given, else default_platform, else the first enabled [platforms.*] section."""
+        if name:
+            return name
+        if self.settings.default_platform:
+            return self.settings.default_platform
+        enabled = [n for n, s in self.settings.platforms.items() if s.get("enabled", True)]
+        if not enabled and self.settings.platforms:
+            raise ConfigError("No platform enabled: set enabled = true under the [platforms.*] sections you use "
+                              "in wingman.toml, or pass --platform.")
+        if not enabled:
+            raise ConfigError("No platform configured: add a [platforms.<name>] section to wingman.toml "
+                              "(see wingman.example.toml), or pass --platform.")
+        return enabled[0]
+
     def resolve(self, path: str) -> Path:
         """A path from the config, relative to the wingman home directory."""
         p = Path(path).expanduser()
         return p if p.is_absolute() else self.home / p
 
 
+def user_config_dir() -> Path:
+    base = os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config"
+    return Path(base) / "wingman"
+
+
+def find_home() -> Path:
+    if os.environ.get("WINGMAN_HOME"):
+        return Path(os.environ["WINGMAN_HOME"]).expanduser()
+    cwd = Path.cwd()
+    if (cwd / "wingman.toml").exists():
+        return cwd
+    user = user_config_dir()
+    return user if (user / "wingman.toml").exists() else cwd
+
+
 def load_config(home: Path | None = None) -> Config:
-    home = home or Path(os.environ.get("WINGMAN_HOME", Path.cwd()))
+    home = home or find_home()
     load_dotenv(home / ".env")
     path = home / "wingman.toml"
     try:

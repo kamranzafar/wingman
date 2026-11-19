@@ -38,11 +38,11 @@ class FakeClient:
 
 
 def test_link_facets_use_utf8_byte_offsets_and_drop_trailing_punctuation():
-    text = "Café notes: https://kamranzafar.org/blog/x/."
+    text = "Café notes: https://example.com/blog/x/."
     [facet] = link_facets(text)
     start = len("Café notes: ".encode())
-    assert facet["index"] == {"byteStart": start, "byteEnd": start + len(b"https://kamranzafar.org/blog/x/")}
-    assert facet["features"][0]["uri"] == "https://kamranzafar.org/blog/x/"
+    assert facet["index"] == {"byteStart": start, "byteEnd": start + len(b"https://example.com/blog/x/")}
+    assert facet["features"][0]["uri"] == "https://example.com/blog/x/"
 
 
 def test_grapheme_length_counts_what_people_see():
@@ -73,12 +73,12 @@ def test_reply_to_a_reply_keeps_the_thread_root_and_adds_link_facets():
     parent = post("p1", "follow-up question", reply={"root": root, "parent": root})
     client = FakeClient({"app.bsky.feed.getPosts": {"posts": [parent]}})
     url = BlueskyPlatform({}, client=client).submit(
-        Reply("bluesky", parent["uri"], "feature flags", "Wrote about this: https://kamranzafar.org/blog/x/"))
+        Reply("bluesky", parent["uri"], "feature flags", "Wrote about this: https://example.com/blog/x/"))
     method, body = client.calls[-1]
     record = body["record"]
     assert method == "com.atproto.repo.createRecord" and body["repo"] == ME
     assert record["reply"] == {"root": root, "parent": {"uri": parent["uri"], "cid": parent["cid"]}}
-    assert record["facets"][0]["features"][0]["uri"] == "https://kamranzafar.org/blog/x/"
+    assert record["facets"][0]["features"][0]["uri"] == "https://example.com/blog/x/"
     assert url == "https://bsky.app/profile/me.bsky.social/post/new1"
 
 

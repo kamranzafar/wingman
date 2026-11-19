@@ -41,15 +41,15 @@ def _index(docs):
 def test_precise_old_match_beats_vague_new_one():
     idx = _index([
         ("Tomcat clustering", "Session replication across a Tomcat cluster with DeltaManager. ", "blog", "2013-08-03"),
-        ("Halyx", "One Java API for AWS, Azure and Google Cloud storage and queues. ", "project", "2026-11-01"),
+        ("Cloudkit", "One Java API for AWS, Azure and Google Cloud storage and queues. ", "project", "2026-11-01"),
     ])
     assert idx.search("How do I set up Tomcat session replication?", k=1)[0].source == "Tomcat clustering"
 
 
 def test_project_wins_a_tie_on_relevance():
     text = "Feature toggles at a seam with one router class per feature, no if statements. "
-    idx = _index([("Old post", text, "blog", "2016-01-01"), ("flipjack", text, "github", "2026-10-01")])
-    assert idx.search("feature toggles router", k=1)[0].source == "flipjack"
+    idx = _index([("Old post", text, "blog", "2016-01-01"), ("togglekit", text, "github", "2026-10-01")])
+    assert idx.search("feature toggles router", k=1)[0].source == "togglekit"
 
 
 def test_search_limits_chunks_per_source_and_skips_unrelated():

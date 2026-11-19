@@ -6,6 +6,9 @@ instance under Preferences → Development → New application, with scopes `rea
 
 from __future__ import annotations
 
+# keys beyond platforms.COMMON
+SETTINGS = frozenset({"instance", "languages", "visibility", "max_characters", "include_bots"})
+
 
 def create(settings: dict):
     from wingman.platforms.mastodon.api import MastodonPlatform

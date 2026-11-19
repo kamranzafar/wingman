@@ -25,6 +25,9 @@ def make_constraints(rules_known: bool) -> Constraints:
                        notes=f"{ETIQUETTE} {rules}")
 
 
+SETTINGS = frozenset({"mode", "listings", "request_delay_seconds"})  # keys beyond platforms.COMMON
+
+
 def create(settings: dict):
     mode = settings.get("mode", "paste")
     if mode == "api":

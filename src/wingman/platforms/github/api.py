@@ -132,7 +132,7 @@ class GitHubDiscussionsPlatform:
 
     # ------------------------------------------------------------ Platform
     def discover(self, sources: list[str], since: datetime, limit: int) -> list[Thread]:
-        """Sources: repos ("spring-projects/spring-boot") or discussion searches ("pgvector", "org:apache kafka")."""
+        """Sources: repos ("fastapi/fastapi") or discussion searches ("org:apache kafka")."""
         self._warn_disabled([s for s in sources if REPO.match(s)])
         seen: dict[str, Thread] = {}
         for source in sources:

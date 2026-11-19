@@ -7,7 +7,7 @@ Errors derived from WingmanError are shown as one line (see `main`).
 from __future__ import annotations
 
 import logging
-import shutil
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -26,7 +26,9 @@ app = typer.Typer(help="Finds conversations you can add to and drafts replies in
 profile_app = typer.Typer(help="Build or view your interest/voice profile.", no_args_is_help=True)
 app.add_typer(profile_app, name="profile")
 
-PlatformOpt = typer.Option("reddit", "--platform", "-p", help="Which platform to use.")
+PlatformOpt = typer.Option(None, "--platform", "-p", show_default=False,
+                           help="reddit, bluesky, mastodon or github (default: default_platform in wingman.toml, "
+                                "else the first platform configured there).")
 
 
 def _services() -> Services:
@@ -41,25 +43,44 @@ def _skipped(items: list[str]) -> None:
 # ---------------------------------------------------------------- setup
 
 
+def _template(name: str) -> str:
+    """The example files: packaged with wingman, or at the repo root when running from a clone."""
+    from importlib.resources import files
+
+    packaged = files("wingman").joinpath("templates", name)
+    if packaged.is_file():
+        return packaged.read_text()
+    return (Path(__file__).resolve().parents[2] / name).read_text()
+
+
 @app.command(rich_help_panel="Setup")
-def init():
-    """Create wingman.toml and .env from the examples."""
-    home = Path.cwd()
+def init(
+    global_: bool = typer.Option(False, "--global", help="Create them in your user config directory "
+                                                         "(~/.config/wingman) instead of the current one."),
+):
+    """Create wingman.toml and .env from the examples (existing files are left alone)."""
+    from wingman.config import user_config_dir
+
+    home = user_config_dir() if global_ else Path(os.environ.get("WINGMAN_HOME") or Path.cwd()).expanduser()
+    home.mkdir(parents=True, exist_ok=True)
     for example, target in (("wingman.example.toml", "wingman.toml"), (".env.example", ".env")):
-        src, dst = home / example, home / target
+        dst = home / target
         if dst.exists():
-            ui.muted(f"{target} already exists, left as is.")
-        elif src.exists():
-            shutil.copy(src, dst)
-            ui.ok(f"Created {target}")
-    ui.info("Next: add your keys to [accent].env[/], set blog_url in [accent]wingman.toml[/], "
-            "then run [accent]wingman profile build[/].")
+            ui.muted(f"{dst} already exists, left as is.")
+            continue
+        dst.write_text(_template(example))
+        if target == ".env":
+            dst.chmod(0o600)  # it will hold API keys
+        ui.ok(f"Created {dst}")
+    ui.info("Next: add your Claude API key to [accent].env[/], set blog_url (or pages/files) and your platforms "
+            "in [accent]wingman.toml[/], then run [accent]wingman profile build[/].")
 
 
 @app.command(rich_help_panel="Setup")
 def check(platform: str = PlatformOpt):
     """Test that wingman can read posts and your history (prints status only, never tokens)."""
     svc = _services()
+    platform = svc.cfg.platform_name(platform)
     plat = svc.platform(platform)
     ui.heading(f"Checking {platform}")
     threads = []
@@ -86,8 +107,9 @@ def check(platform: str = PlatformOpt):
 @profile_app.command("build")
 def profile_build(
     blog: str = typer.Option(None, help="Blog URL (overrides wingman.toml for this run)."),
-    platform: str = typer.Option("reddit", "--platform", "-p", help="Also learn from your comments here."),
-    no_comments: bool = typer.Option(False, help="Don't read your past comments."),
+    platform: str = typer.Option(None, "--platform", "-p", show_default=False,
+                                 help="Also learn from your past comments here (default: your default platform)."),
+    no_comments: bool = typer.Option(False, "--no-comments", help="Don't read your past comments."),
     notes: str = typer.Option("", help="Anything else about you, e.g. '10 years in Python, opinions on testing'."),
 ):
     """Read your blog, background pages/files (and past comments) and build your profile."""
@@ -106,7 +128,7 @@ def profile_build(
     comments = []
     if not no_comments:
         try:
-            comments = svc.platform(platform).my_activity(limit=300)
+            comments = svc.platform(svc.cfg.platform_name(platform)).my_activity(limit=300)
             svc.store.save_activity(comments)
             if comments:
                 ui.step(f"{len(comments)} of your comments")
@@ -198,15 +220,15 @@ def draft(
 ):
     """Draft a reply to one post you found yourself.
 
-    Bluesky: just pass the post's link. Reddit (paste mode): on the thread page, select all (Cmd+A)
-    and copy (Cmd+C) first, then run `wingman draft <url>`.
+    Bluesky, Mastodon and GitHub Discussions: just pass the post's link. Reddit (paste mode): on the
+    thread page, select all and copy first, then run [accent]wingman draft <url>[/].
     """
     from wingman.core.review import ReviewSession
     from wingman.platforms import platform_for_url
 
     url = (url or ui.ask("Thread URL")).strip()
-    platform = platform or platform_for_url(url) or "reddit"
     svc = _services()
+    platform = platform or platform_for_url(url) or svc.cfg.platform_name(None)
     plat = svc.platform(platform)
     drafter = svc.drafter(plat)  # fails early (before any Claude call) if there's no profile yet
 
@@ -228,7 +250,7 @@ def post(
     topic: str = typer.Argument(None, help="What to post about (prompted if omitted, unless --blog is given)."),
     blog: str = typer.Option(None, "--blog", help="Share one of your blog posts: its URL."),
     notes: str = typer.Option("", help="Extra points you want in the post."),
-    platform: str = typer.Option("bluesky", "--platform", "-p", help="Where to post."),
+    platform: str = PlatformOpt,
 ):
     """Draft a new post in your voice (not a reply): about a topic, or sharing a blog post."""
     from wingman.core.composer import compose_target
@@ -236,6 +258,7 @@ def post(
     from wingman.sources.web import fetch_article
 
     svc = _services()
+    platform = svc.cfg.platform_name(platform)
     plat = svc.platform(platform)
     if plat.posting != "api":
         raise WingmanError(f"New posts need a platform wingman can post to; {platform} isn't one in this mode.")
@@ -270,15 +293,19 @@ def scan(
 ):
     """Find new posts on your topics and rank them against your profile.
 
-    Examples: [accent]wingman scan -p bluesky -t "outbox pattern" -t debezium[/],
-    [accent]wingman scan -p mastodon -t "#kafka"[/], [accent]wingman scan -p github -t quarkusio/quarkus[/]
+    Examples: [accent]wingman scan -p bluesky -t "python asyncio" -t "#rustlang"[/],
+    [accent]wingman scan -p mastodon -t "#postgresql"[/], [accent]wingman scan -p github -t fastapi/fastapi[/]
     """
     from wingman.core.ranker import rank
 
     svc = _services()
+    platform = svc.cfg.platform_name(platform)
     plat = svc.platform(platform)
     settings = svc.cfg.platform_settings(platform)
-    profile_brief = svc.profile().brief()
+    from wingman.core import privacy
+
+    # private_terms stay out of every prompt after profile build (ranking included, not just drafting)
+    profile_brief = privacy.redact(svc.profile().brief(), svc.settings.profile.private_terms)
 
     now = now_utc()
     since = now - timedelta(hours=settings.get("max_age_hours", 12))
@@ -311,6 +338,7 @@ def review(
     from wingman.core.review import ReviewSession
 
     svc = _services()
+    platform = svc.cfg.platform_name(platform)
     plat = svc.platform(platform)
     items = svc.store.review_queue(platform, min_score, svc.cfg.platform_settings(platform).get("max_age_hours", 12),
                                    limit)
@@ -320,7 +348,7 @@ def review(
 
 
 @app.command(rich_help_panel="Find & review")
-def queue(platform: str = typer.Option(None, "--platform", "-p")):
+def queue(platform: str = typer.Option(None, "--platform", "-p", help="Only this platform (default: all).")):
     """List approved replies waiting for their pacing slot."""
     rows = _services().store.queued_posts(platform)
     if not rows:
@@ -335,6 +363,7 @@ def flush(platform: str = PlatformOpt):
     from wingman.core.pacing import next_allowed
 
     svc = _services()
+    platform = svc.cfg.platform_name(platform)
     due = [r for r in svc.store.queued_posts(platform)
            if r["due_at"] and datetime.fromisoformat(r["due_at"]) <= now_utc()]
     if not due:
@@ -374,6 +403,7 @@ def stats(
     from wingman.core.stats import summarize, write_learnings
 
     svc = _services()
+    platform = svc.cfg.platform_name(platform)
     plat = svc.platform(platform)
     try:
         with console.status("Fetching your posts…"):

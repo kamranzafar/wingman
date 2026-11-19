@@ -1,9 +1,26 @@
 [project]
 name = "wingman"
 version = "0.1.0"
-description = "A human-in-the-loop social copilot: finds threads that match your interests and drafts replies for you to review."
+description = "A human-in-the-loop copilot for online communities: finds conversations you can add to and drafts replies in your voice. You approve every post."
 readme = "README.md"
 requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Kamran Zafar" }]
+keywords = ["cli", "reddit", "bluesky", "mastodon", "github-discussions", "claude", "llm", "community"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Communications",
+    "Topic :: Internet",
+]
 dependencies = [
     "anthropic>=2.10",
     "praw>=7.8",
@@ -15,6 +32,10 @@ dependencies = [
     "certifi>=2024.2",
     "pypdf>=4.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/kamranzafar/wingman"
+Issues = "https://github.com/kamranzafar/wingman/issues"
 
 [project.scripts]
 wingman = "wingman.cli:main"
@@ -45,3 +66,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/wingman"]
+
+# `wingman init` copies these; they live at the repo root so they're easy to find on GitHub.
+[tool.hatch.build.targets.wheel.force-include]
+"wingman.example.toml" = "wingman/templates/wingman.example.toml"
+".env.example" = "wingman/templates/.env.example"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "README.md", "CONTRIBUTING.md", "LICENSE", "wingman.example.toml", ".env.example"]
