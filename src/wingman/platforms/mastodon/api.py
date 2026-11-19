@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Mastodon adapter: hashtag/search/home discovery, thread context, replies and your post history.
 
 Everything goes through your own instance, so posts from other servers carry your instance's ids and

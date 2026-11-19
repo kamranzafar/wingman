@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Reddit adapter built on PRAW. Credentials come from environment variables (.env)."""
 
 from __future__ import annotations

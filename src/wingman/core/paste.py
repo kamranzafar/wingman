@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Turn a thread URL plus text you copied from your browser into a Thread."""
 
 from __future__ import annotations

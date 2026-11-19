@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Platform-neutral data model. Every adapter converts its native objects into these."""
 
 from __future__ import annotations

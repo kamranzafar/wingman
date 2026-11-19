@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Keeps posting at a human pace so you don't trip spam filters or flood a community."""
 
 from __future__ import annotations

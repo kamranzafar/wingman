@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Scores threads: Claude judges relevance to your profile; a local formula judges opportunity."""
 
 from __future__ import annotations

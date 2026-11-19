@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Drafts new standalone posts (not replies) in the user's voice: from a topic, or sharing a blog post."""
 
 from __future__ import annotations

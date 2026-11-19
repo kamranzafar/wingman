@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Private terms (employers, clients, colleagues): kept from the drafting model and blocked at posting."""
 
 from __future__ import annotations

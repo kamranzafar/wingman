@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Minimal AT Protocol (XRPC) client: an app-password session plus GET/POST calls."""
 
 from __future__ import annotations

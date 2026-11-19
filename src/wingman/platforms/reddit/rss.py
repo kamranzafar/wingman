@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Reddit without API access: reads public RSS feeds, and you post from your own browser.
 
 Discovery: /r/<sub>/new/.rss and /r/<sub>/rising/.rss

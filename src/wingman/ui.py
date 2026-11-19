@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Terminal presentation: one themed console, status lines, tables, key bars and single-key input.
 
 Every module prints through this, so wingman looks the same everywhere and colours carry meaning:

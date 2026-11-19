@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """GitHub Discussions adapter: search discovery, discussion context, comments and your comment history."""
 
 from __future__ import annotations

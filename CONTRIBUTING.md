@@ -74,5 +74,13 @@ warning), and `WingmanError` for other expected failures.
 
 ## Pull requests
 
+- Start every new Python file with the license header (a test checks this):
+
+  ```python
+  # SPDX-FileCopyrightText: 2026 Kamran Zafar
+  # SPDX-License-Identifier: Apache-2.0
+  ```
+
+  By contributing, you agree your work is licensed under Apache-2.0, as the license's section 5 says.
 - Keep changes focused, with tests, and run `uv run ruff check src tests && uv run pytest -q`.
 - Describe what changed and why; for a new platform, say how you tested it against the real service.

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Builds the objects commands need from config (composition root). Created lazily, closed once."""
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Your public GitHub repos and READMEs, with a local cache for when the API rate-limits."""
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 from wingman.core import privacy
 
 TERMS = ["ACME", "Globex Corporation"]

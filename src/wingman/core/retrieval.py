@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Local hybrid retrieval over your own writing: BM25 always, plus Ollama embeddings when available.
 
 Nothing here calls Claude, so searching is free. The index is a JSON file in data/.

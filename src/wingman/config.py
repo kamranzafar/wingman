@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Typed configuration: wingman.toml + .env, plus the data/ directory, all in one "home" directory.
 
 Home is, in order: $WINGMAN_HOME; the current directory if it has a wingman.toml; your user config

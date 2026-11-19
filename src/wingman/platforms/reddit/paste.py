@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Reddit with no Reddit access at all: you bring the thread (`wingman draft <url>`), you post it.
 
 Nothing in this adapter touches Reddit. Threads come from text you copy out of your browser;

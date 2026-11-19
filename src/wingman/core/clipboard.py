@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """System clipboard access (macOS, Wayland, X11, Windows)."""
 
 from __future__ import annotations

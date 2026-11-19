@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Collecting your own writing and background, shared by `profile build` and `index`.
 
 Each source is optional and fails independently: a skipped source is reported, not fatal.

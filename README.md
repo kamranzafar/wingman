@@ -62,7 +62,14 @@ limits cap how often you post, and drafts never invent experiences for you.
 ## Install
 
 ```bash
-uv tool install git+https://github.com/kamranzafar/wingman    # or: pipx install git+https://...
+uv tool install community-wingman    # or: pipx install community-wingman
+```
+
+The package is `community-wingman` on PyPI; the command it installs is `wingman`.
+To run the latest unreleased code instead:
+
+```bash
+uv tool install git+https://github.com/kamranzafar/wingman
 ```
 
 Or from a clone, for development:
@@ -108,8 +115,8 @@ wingman keeps its files in one **home** directory, chosen in this order:
 
 | file | what |
 |---|---|
-| `wingman.toml` | settings. Every option is documented in [`wingman.example.toml`](wingman.example.toml). Unknown keys are reported as errors, with a "did you mean" hint. |
-| `.env` | secrets: API keys, tokens, app passwords. Template: [`.env.example`](.env.example). |
+| `wingman.toml` | settings. Every option is documented in [`wingman.example.toml`](https://github.com/kamranzafar/wingman/blob/main/wingman.example.toml). Unknown keys are reported as errors, with a "did you mean" hint. |
+| `.env` | secrets: API keys, tokens, app passwords. Template: [`.env.example`](https://github.com/kamranzafar/wingman/blob/main/.env.example). |
 | `data/` | your profile, database, index and usage log (see [Privacy and your data](#privacy-and-your-data)) |
 
 Main sections of `wingman.toml`:
@@ -349,7 +356,7 @@ wingman helps you take part in communities. It doesn't take part for you. Please
 
 ## Contributing
 
-Contributions are welcome, especially new platform adapters. See [CONTRIBUTING.md](CONTRIBUTING.md)
+Contributions are welcome, especially new platform adapters. See [CONTRIBUTING.md](https://github.com/kamranzafar/wingman/blob/main/CONTRIBUTING.md)
 for setup, ground rules and a step-by-step guide to adding a platform.
 
 ```bash
@@ -358,4 +365,4 @@ uv sync && uv run pytest -q && uv run ruff check src tests   # no network or cre
 
 ## License
 
-[Apache License 2.0](LICENSE)
+[Apache License 2.0](https://github.com/kamranzafar/wingman/blob/main/LICENSE)

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """One place for outbound HTTP: certifi trust store (python.org macOS builds ship without one),
 a descriptive User-Agent, and timeouts."""
 

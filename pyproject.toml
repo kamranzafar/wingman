@@ -1,6 +1,6 @@
 [project]
-name = "wingman"
-version = "0.1.0"
+name = "community-wingman"
+dynamic = ["version"]
 description = "A human-in-the-loop copilot for online communities: finds conversations you can add to and drafts replies in your voice. You approve every post."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -36,6 +36,10 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/kamranzafar/wingman"
 Issues = "https://github.com/kamranzafar/wingman/issues"
+Changelog = "https://github.com/kamranzafar/wingman/releases"
+
+[tool.hatch.version]
+path = "src/wingman/__init__.py"
 
 [project.scripts]
 wingman = "wingman.cli:main"

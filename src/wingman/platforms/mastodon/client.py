@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Minimal Mastodon REST client: a bearer token against your own instance."""
 
 from __future__ import annotations

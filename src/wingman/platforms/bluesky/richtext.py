@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Bluesky post text helpers: URLs only become clickable links when declared as 'facets'."""
 
 from __future__ import annotations

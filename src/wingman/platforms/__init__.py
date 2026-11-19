@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Platform adapter registry.
 
 Each platform lives in its own package (platforms/<name>/) exposing `create(settings) -> Platform`

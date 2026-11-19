@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Minimal GitHub GraphQL client: a token from GITHUB_TOKEN or the gh CLI."""
 
 from __future__ import annotations

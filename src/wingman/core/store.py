@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """SQLite persistence: seen threads, rankings, the post log/queue, and activity snapshots."""
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Your interest + voice profile: built once by Claude from your writing, then read on every run."""
 
 from __future__ import annotations

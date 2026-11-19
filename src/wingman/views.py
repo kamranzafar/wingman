@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Presentation of reports (profile, scan results, stats, cost, quality, queue). Commands fetch data and call these."""
 
 from __future__ import annotations

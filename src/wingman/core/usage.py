@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Claude API cost tracking: pricing, a JSONL usage log, and summaries for `wingman cost`."""
 
 from __future__ import annotations

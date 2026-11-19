@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Reddit adapters, picked by `mode` in [platforms.reddit]:
 
 paste.py - (default) no Reddit access: `wingman draft <url>` with text copied from your browser

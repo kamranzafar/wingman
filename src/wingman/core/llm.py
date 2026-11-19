@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Thin wrapper around the Claude API for structured (Pydantic) outputs, with cost tracking."""
 
 from __future__ import annotations

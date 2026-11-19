@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Draft quality tracking: your 1-5 ratings plus how much you edited a draft before posting."""
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Mastodon status text: HTML content to plain text, and length as Mastodon counts it."""
 
 from __future__ import annotations

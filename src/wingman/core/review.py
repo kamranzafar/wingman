@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Interactive terminal review. The only place a reply can be posted from."""
 
 from __future__ import annotations

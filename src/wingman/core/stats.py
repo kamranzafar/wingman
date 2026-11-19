@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """Karma analytics over your own comment history, plus an optional Claude-written 'what works' note."""
 
 from __future__ import annotations

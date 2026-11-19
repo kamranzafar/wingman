@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Kamran Zafar
+# SPDX-License-Identifier: Apache-2.0
+
 """wingman: a human-in-the-loop copilot for online communities.
 
 Commands are thin: they gather input, call core/sources/services, and hand results to `views`.
