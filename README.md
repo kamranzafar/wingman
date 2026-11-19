@@ -1,8 +1,8 @@
 # wingman
 
 A terminal copilot for online communities. It finds threads where you can add something real,
-drafts replies in your voice, and posts **only what you approve**. It works with Reddit, Bluesky and
-Mastodon; each platform is an adapter in `src/wingman/platforms/`, so more can be added.
+drafts replies in your voice, and posts **only what you approve**. It works with Reddit, Bluesky,
+Mastodon and GitHub Discussions; each platform is an adapter in `src/wingman/platforms/`, so more can be added.
 
 ## Setup
 
@@ -89,6 +89,22 @@ Sources are hashtags (`#java`, the reliable option), `@home` (people you follow)
 instance), or plain words (full-text search, which only covers people who opted in to it). Bots,
 boosts and replies are skipped. Replies start with the author's `@mention` so they're notified, and
 count length the way Mastodon does (links are 23 characters).
+
+### GitHub Discussions
+
+Full loop too: scan, rank, draft, comment after you approve. wingman uses `GITHUB_TOKEN` from `.env`
+(a classic token with the `public_repo` scope), or the token of a logged-in GitHub CLI (`gh auth login`):
+
+```bash
+uv run wingman check -p github                                      # can it search and read?
+uv run wingman scan -p github                                       # open discussions, ranked
+uv run wingman review -p github                                     # draft, edit, comment
+uv run wingman draft https://github.com/owner/repo/discussions/42   # one discussion
+```
+
+Sources in `[platforms.github]` are repos (`spring-projects/spring-boot`) or discussion searches
+(`pgvector`, `org:apache kafka`). Answered, closed and locked discussions are skipped. Drafts use
+markdown and code blocks; wingman only comments, it never opens new discussions.
 
 ### API mode
 

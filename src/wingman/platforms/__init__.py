@@ -11,7 +11,7 @@ from importlib import import_module
 from wingman.errors import ConfigError
 from wingman.platforms.base import Platform
 
-PLATFORMS = ("reddit", "bluesky", "mastodon")
+PLATFORMS = ("reddit", "bluesky", "mastodon", "github")
 # Which platform a pasted thread URL belongs to, so `wingman draft <url>` needs no --platform.
 URL_HOSTS = {"reddit.com": "reddit", "www.reddit.com": "reddit", "old.reddit.com": "reddit",
              "redd.it": "reddit", "bsky.app": "bluesky"}
@@ -20,11 +20,14 @@ URL_HOSTS = {"reddit.com": "reddit", "www.reddit.com": "reddit", "old.reddit.com
 def platform_for_url(url: str) -> str | None:
     from urllib.parse import urlsplit
 
+    from wingman.platforms.github.api import WEB_DISCUSSION_URL
     from wingman.platforms.mastodon.api import WEB_STATUS_URL
 
     host = URL_HOSTS.get(urlsplit(url).netloc.lower())
     if host:
         return host
+    if WEB_DISCUSSION_URL.match(url):
+        return "github"
     # Mastodon runs on thousands of hosts; recognise its status-link shape instead.
     return "mastodon" if WEB_STATUS_URL.match(url) else None
 

@@ -65,3 +65,16 @@ per_source_limit = 40       # posts fetched per source (40 per request)
 # visibility = "public"     # or "unlisted" to keep replies off public timelines
 # max_characters = 500      # raise if your instance allows longer posts
 # include_bots = false      # automated accounts (news feeds, RSS mirrors) are skipped by default
+
+[platforms.github]
+enabled = true
+# GitHub Discussions. Repos ("owner/name") or discussion searches ("pgvector", "org:apache kafka").
+# Each repo is a pacing "source": max_per_source_per_day applies per repo.
+# Many big projects (spring-boot, kafka, debezium, pgvector) don't use Discussions; wingman warns if one is off.
+sources = [
+    "spring-projects/spring-ai", "langchain4j/langchain4j", "quarkusio/quarkus",
+    "testcontainers/testcontainers-java", "Unleash/unleash", "Flagsmith/flagsmith",
+]
+max_age_hours = 336         # two weeks: discussions are slow, and an unanswered question stays worth answering
+per_source_limit = 30       # discussions fetched per source
+# skip_answered = true      # leave out Q&A discussions that already have a marked answer
