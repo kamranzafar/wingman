@@ -55,16 +55,15 @@ def session(store):
 
 
 def test_posting_unchanged_suggests_5_and_enter_accepts(session, thread, monkeypatch):
-    answers = iter([""])  # just Enter
-    monkeypatch.setattr("wingman.core.review.Prompt.ask", lambda *a, default="", **k: next(answers) or default)
+    monkeypatch.setattr("wingman.ui.key", lambda prompt, valid, default=None: default)  # just Enter
     session._rate(thread, _selection("Use a router per flag."), "posted")
     [r] = session.store.ratings()
     assert (r.rating, r.similarity, r.model, r.outcome) == (5, 1.0, "claude-haiku-5-5", "posted")
 
 
 def test_low_rating_asks_what_was_off(session, thread, monkeypatch):
-    answers = iter(["2", "fv"])
-    monkeypatch.setattr("wingman.core.review.Prompt.ask", lambda *a, **k: next(answers))
+    monkeypatch.setattr("wingman.ui.key", lambda *a, **k: "2")
+    monkeypatch.setattr("wingman.ui.ask", lambda *a, **k: "fv")
     sel = _selection("draft", own_text="something I wrote myself")
     sel.regenerations = 2
     session._rate(thread, sel, "posted")
@@ -73,13 +72,13 @@ def test_low_rating_asks_what_was_off(session, thread, monkeypatch):
 
 
 def test_skipping_the_rating_records_nothing(session, thread, monkeypatch):
-    monkeypatch.setattr("wingman.core.review.Prompt.ask", lambda *a, **k: "")
-    session._rate(thread, _selection("draft"), "skipped")  # no default when nothing was posted
+    monkeypatch.setattr("wingman.ui.key", lambda prompt, valid, default=None: default)  # Enter
+    session._rate(thread, _selection("draft"), "skipped")  # nothing posted: Enter means skip
     assert session.store.ratings() == []
 
 
 def test_no_rating_without_drafts_or_when_disabled(session, thread, monkeypatch):
-    monkeypatch.setattr("wingman.core.review.Prompt.ask", lambda *a, **k: pytest.fail("should not ask"))
+    monkeypatch.setattr("wingman.ui.key", lambda *a, **k: pytest.fail("should not ask"))
     session._rate(thread, Selection(), "posted")  # no drafts (e.g. you wrote it yourself)
     session.ask_rating = False
     session._rate(thread, _selection("draft"), "posted")
@@ -113,8 +112,8 @@ def test_back_returns_to_previous_thread_without_redrafting(store, thread, monke
     answers = iter(["b", "n",   # A: back is refused on the first thread, then next
                     "b",        # B: back to A
                     "n",        # A again: same drafts, next
-                    "q", ""])   # B again: quit, skip the rating
-    monkeypatch.setattr("wingman.core.review.Prompt.ask", lambda *args, **kw: next(answers))
+                    "q", "s"])  # B again: quit, skip the rating
+    monkeypatch.setattr("wingman.ui.key", lambda *args, **kw: next(answers))
     ReviewSession(plat, store, drafter, PacingSettings(), []).run([a, b])
     assert drafter.calls == ["reddit:A", "reddit:B"]  # each thread drafted once despite revisits
     assert plat.fetched == ["reddit:A", "reddit:B"]
@@ -125,7 +124,7 @@ def test_cannot_post_the_same_thread_twice_in_a_session(store, thread, monkeypat
     session = ReviewSession(RedditPastePlatform({}), store, None, PacingSettings(), [])
     monkeypatch.setattr("wingman.core.review.clipboard.copy", lambda t: True)
     monkeypatch.setattr("wingman.core.review.webbrowser.open", lambda u: None)
-    monkeypatch.setattr("wingman.core.review.Prompt.ask", lambda *a, **k: "")
+    monkeypatch.setattr("wingman.ui.ask", lambda *a, **k: "")
     store.save_pasted(thread)
     assert session._post(thread, "first reply") == "posted"
     assert session._post(thread, "second reply") is None

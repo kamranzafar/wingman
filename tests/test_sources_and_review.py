@@ -70,7 +70,7 @@ def test_manual_posting_copies_opens_and_records(session, thread, monkeypatch):
     copied, opened = [], []
     monkeypatch.setattr(review.clipboard, "copy", lambda t: copied.append(t) or True)
     monkeypatch.setattr(review.webbrowser, "open", opened.append)
-    monkeypatch.setattr(review.Prompt, "ask", lambda *a, **k: "https://www.reddit.com/r/x/comments/abc123/c/k1")
+    monkeypatch.setattr("wingman.ui.ask", lambda *a, **k: "https://www.reddit.com/r/x/comments/abc123/c/k1")
     session.store.save_pasted(thread)  # `wingman draft` saves the thread before review
     assert session._post(thread, "Set snapshot.mode=when_needed.")
     assert copied == ["Set snapshot.mode=when_needed."] and opened == [thread.url]
@@ -82,6 +82,6 @@ def test_manual_posting_answer_x_records_nothing(session, thread, monkeypatch):
     import wingman.core.review as review
     monkeypatch.setattr(review.clipboard, "copy", lambda t: True)
     monkeypatch.setattr(review.webbrowser, "open", lambda u: None)
-    monkeypatch.setattr(review.Prompt, "ask", lambda *a, **k: "x")
+    monkeypatch.setattr("wingman.ui.ask", lambda *a, **k: "x")
     assert not session._post(thread, "ok")
     assert session.store.logged_posts("reddit") == []

@@ -95,8 +95,10 @@ class Store:
         self.close()
 
     # threads -------------------------------------------------------------
-    def known_keys(self, platform: str) -> set[str]:
-        return {r["key"] for r in self.db.execute("SELECT key FROM threads WHERE platform = ?", (platform,))}
+    def known_keys(self, platform: str, acted_on_only: bool = False) -> set[str]:
+        """Threads already stored; with acted_on_only, just those you've moved past 'ranked' (skipped, posted…)."""
+        sql = "SELECT key FROM threads WHERE platform = ?" + (" AND status != 'ranked'" if acted_on_only else "")
+        return {r["key"] for r in self.db.execute(sql, (platform,))}
 
     def _upsert_thread(self, thread: Thread, status: ThreadStatus, relevance=None, opportunity=None,
                        final=None, angle: str = "") -> None:

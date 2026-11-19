@@ -1,7 +1,7 @@
 """wingman: a human-in-the-loop copilot for online communities.
 
-Commands are thin: they gather input, call core/sources/services, and print results.
-Errors derived from WingmanError are shown as one red line (see `main`).
+Commands are thin: they gather input, call core/sources/services, and hand results to `views`.
+Errors derived from WingmanError are shown as one line (see `main`).
 """
 
 from __future__ import annotations
@@ -13,16 +13,16 @@ from pathlib import Path
 
 import typer
 from rich.logging import RichHandler
-from rich.prompt import Confirm, Prompt
-from rich.table import Table
+from rich.markup import escape
 
+from wingman import ui, views
 from wingman.core.models import Reply, now_utc
 from wingman.errors import NotReadyError, WingmanError
 from wingman.services import Services
 from wingman.ui import console
 
-app = typer.Typer(help="Finds threads you can add to and drafts replies in your voice. You approve every post.",
-                  no_args_is_help=True, pretty_exceptions_show_locals=False)
+app = typer.Typer(help="Finds conversations you can add to and drafts replies in your voice. You approve every post.",
+                  no_args_is_help=True, pretty_exceptions_show_locals=False, rich_markup_mode="rich")
 profile_app = typer.Typer(help="Build or view your interest/voice profile.", no_args_is_help=True)
 app.add_typer(profile_app, name="profile")
 
@@ -30,55 +30,57 @@ PlatformOpt = typer.Option("reddit", "--platform", "-p", help="Which platform to
 
 
 def _services() -> Services:
-    return Services(on_usage=lambda line: console.print(f"[dim]  {line}[/]"))
+    return Services(on_usage=lambda line: ui.muted(f"  ⋯ {line}"))
 
 
-def _progress(message: str) -> None:
-    console.print(f"  {message}")
+def _skipped(items: list[str]) -> None:
+    for item in items:
+        ui.warn(f"Skipped {escape(item)}")
 
 
 # ---------------------------------------------------------------- setup
 
 
-@app.command()
+@app.command(rich_help_panel="Setup")
 def init():
     """Create wingman.toml and .env from the examples."""
     home = Path.cwd()
     for example, target in (("wingman.example.toml", "wingman.toml"), (".env.example", ".env")):
         src, dst = home / example, home / target
         if dst.exists():
-            console.print(f"{target} already exists, leaving it alone.")
+            ui.muted(f"{target} already exists, left as is.")
         elif src.exists():
             shutil.copy(src, dst)
-            console.print(f"[green]Created {target}[/]")
-    console.print("Next: fill in .env, set blog_url and subreddits in wingman.toml, then run "
-                  "[bold]wingman profile build[/].")
+            ui.ok(f"Created {target}")
+    ui.info("Next: add your keys to [accent].env[/], set blog_url in [accent]wingman.toml[/], "
+            "then run [accent]wingman profile build[/].")
 
 
-@app.command()
+@app.command(rich_help_panel="Setup")
 def check(platform: str = PlatformOpt):
-    """Test that wingman can read threads and your comments (prints status only, never tokens)."""
+    """Test that wingman can read posts and your history (prints status only, never tokens)."""
     svc = _services()
     plat = svc.platform(platform)
+    ui.heading(f"Checking {platform}")
     threads = []
     try:
-        with console.status("Reading threads…"):
+        with console.status("Reading posts…"):
             threads = plat.discover(svc.cfg.platform_settings(platform).get("sources", []),
                                     datetime(2000, 1, 1, tzinfo=UTC), 10)
-        console.print(f"[green]✓ threads:[/] {len(threads)} from "
-                      f"{', '.join(sorted({t.source for t in threads})) or 'nothing'}")
+        sources = ", ".join(sorted({t.source for t in threads})) or "nothing"
+        ui.ok(f"Posts: {len(threads)} from {escape(sources)}")
     except WingmanError as e:
-        console.print(f"[yellow]✗ threads:[/] {e}")
+        ui.error(f"Posts: {escape(str(e))}")
     if threads:
         try:
             t = plat.fetch_context(threads[0])
-            console.print(f"[green]✓ replies:[/] {len(t.top_comments)} on \"{t.title[:60]}\"")
+            ui.ok(f"Replies: {len(t.top_comments)} loaded on “{escape(t.title[:60])}”")
         except Exception as e:  # noqa: BLE001 - report any adapter failure
-            console.print(f"[yellow]✗ replies:[/] {e} (review still works; drafts just won't see them)")
+            ui.warn(f"Replies: {escape(str(e))} (review still works; drafts just won't see them)")
     try:
-        console.print(f"[green]✓ your comments:[/] {len(plat.my_activity(limit=25))}")
+        ui.ok(f"Your history: {len(plat.my_activity(limit=25))} recent posts")
     except WingmanError as e:
-        console.print(f"[yellow]✗ your comments:[/] {e}")
+        ui.warn(f"Your history: {escape(str(e))}")
 
 
 @profile_app.command("build")
@@ -95,10 +97,11 @@ def profile_build(
     svc = _services()
     if blog:
         svc.settings.profile.blog_url = blog
-    collected = sources.collect(svc.cfg, max_posts=svc.settings.profile.blog_max_pages, include_files=True,
-                                progress=_progress)
-    for skipped in collected.skipped:
-        console.print(f"[yellow]  skipped {skipped}[/]")
+    ui.heading("Reading your writing")
+    with console.status("Collecting sources…"):
+        collected = sources.collect(svc.cfg, max_posts=svc.settings.profile.blog_max_pages, include_files=True,
+                                    progress=ui.step)
+    _skipped(collected.skipped)
 
     comments = []
     if not no_comments:
@@ -106,26 +109,27 @@ def profile_build(
             comments = svc.platform(platform).my_activity(limit=300)
             svc.store.save_activity(comments)
             if comments:
-                console.print(f"  {len(comments)} of your comments")
+                ui.step(f"{len(comments)} of your comments")
         except WingmanError as e:
-            console.print(f"[yellow]  skipped past comments: {e}[/]")
+            ui.warn(f"Skipped past comments: {escape(str(e))}")
     if not collected.all and not comments and not notes:
         raise WingmanError("Nothing to build a profile from. Set blog_url, pages or files, or pass --notes.")
 
     with console.status("Building your profile with Claude…"):
         profile = build_profile(svc.llm, collected.blog, collected.background, comments, notes)
     path = svc.profiles.save(profile)
-    console.print(profile.brief())
-    console.print(f"\n[green]Saved to {path}[/] (edit it freely; wingman reads it on every run).")
+    views.profile(profile, private_terms=svc.settings.profile.private_terms)
+    ui.ok(f"Saved to {path} [muted](edit it freely; wingman reads it on every run)[/]")
 
 
 @profile_app.command("show")
 def profile_show():
-    """Print your current profile."""
-    console.print(_services().profile().brief())
+    """Show your current profile."""
+    svc = _services()
+    views.profile(svc.profile(), str(svc.profiles.path), svc.settings.profile.private_terms)
 
 
-@app.command()
+@app.command(rich_help_panel="Setup")
 def index():
     """Index your own writing (blog, GitHub READMEs, pages, posted replies) for drafts. Free: no Claude calls."""
     from wingman import sources
@@ -133,17 +137,18 @@ def index():
     from wingman.core.retrieval import Index
 
     svc = _services()
-    collected = sources.collect(svc.cfg, max_posts=svc.settings.drafting.index_max_posts, include_files=False,
-                                progress=_progress)
-    for skipped in collected.skipped:
-        console.print(f"[yellow]  skipped {skipped}[/]")
+    ui.heading("Indexing your writing")
+    with console.status("Collecting sources…"):
+        collected = sources.collect(svc.cfg, max_posts=svc.settings.drafting.index_max_posts, include_files=False,
+                                    progress=ui.step)
+    _skipped(collected.skipped)
     # The bare GitHub profile entry ("N public repos") adds nothing useful to drafts.
     docs = [d for d in collected.all if not d.title.startswith("GitHub profile:")]
     replies = [r for name in svc.settings.platforms for r in svc.store.logged_posts(name)]
     docs += [Document(title=f"Your reply in {r.source}", text=r.body, kind="reply", url=r.permalink,
                       date=r.created_at.date().isoformat()) for r in replies]
     if replies:
-        _progress(f"{len(replies)} of your posted replies")
+        ui.step(f"{len(replies)} of your posted replies")
     if not docs:
         raise WingmanError("Nothing to index. Set blog_url, github or pages in wingman.toml.")
 
@@ -151,10 +156,10 @@ def index():
     with console.status(f"Indexing {len(docs)} sources" + (f" with {embedder.model} (local)…" if embedder else "…")):
         idx = Index.build(docs, embedder, svc.weighting)
     idx.save(svc.index_path)
-    console.print(f"[green]Indexed {len(idx.chunks)} chunks from {len(docs)} sources · search: {idx.mode}[/]")
+    ui.ok(f"Indexed {len(idx.chunks)} passages from {len(docs)} sources · search: {idx.mode}")
     if embedder and not idx.embedder:
-        console.print(f"[dim]Ollama wasn't reachable (or `{embedder.model}` isn't pulled), so this index is "
-                      f"keyword-only. Start Ollama, run `ollama pull {embedder.model}`, then `wingman index` again.[/]")
+        ui.warn(f"Ollama wasn't reachable (or [accent]{embedder.model}[/] isn't pulled), so search is keyword-only. "
+                f"Start Ollama, run [accent]ollama pull {embedder.model}[/], then index again.")
 
 
 # ---------------------------------------------------------------- drafting & posting
@@ -169,29 +174,29 @@ def _thread_from_paste(svc: Services, platform: str, url: str, editor: bool):
     extracted = None
     clip = None if editor else clipboard.paste()
     if clip and len(clip.strip()) >= 80 and clip.strip() != url:
-        preview = " ".join(clip.split())[:90]
-        if Confirm.ask(f"Use the copied text ({len(clip):,} chars: “{preview}…”)?", default=True):
+        preview = escape(" ".join(clip.split())[:70])
+        if ui.confirm(f"Use the text you copied ({len(clip):,} chars: “{preview}…”)?", default=True):
             with console.status("Reading the thread from your clipboard…"):
                 extracted = extract_from_text(svc.llm, clip)
             if not extracted.found_thread:
-                console.print("[yellow]That doesn't look like a thread. Paste it into the editor instead.[/]")
+                ui.warn("That doesn't look like a thread. Paste it into the editor instead.")
                 extracted = None
     if extracted is None:
         extracted = parse_template(typer.edit(EDITOR_TEMPLATE, extension=".md") or "")
         if not extracted.found_thread:
             raise WingmanError("No thread text provided.")
-    community = community or extracted.community or Prompt.ask("Which community is this in?")
+    community = community or extracted.community or ui.ask("Which community is this in?")
     return to_thread(platform, url, community.removeprefix("r/"), thread_id, extracted)
 
 
-@app.command()
+@app.command(rich_help_panel="Write")
 def draft(
     url: str = typer.Argument(None, help="The thread's URL (prompted if omitted)."),
     platform: str = typer.Option(None, "--platform", "-p", help="Which platform (default: from the URL)."),
     editor: bool = typer.Option(False, "--editor", help="Paste the thread into your editor instead of "
                                                         "reading it from the clipboard."),
 ):
-    """Draft a reply to a thread you found yourself.
+    """Draft a reply to one post you found yourself.
 
     Bluesky: just pass the post's link. Reddit (paste mode): on the thread page, select all (Cmd+A)
     and copy (Cmd+C) first, then run `wingman draft <url>`.
@@ -199,38 +204,33 @@ def draft(
     from wingman.core.review import ReviewSession
     from wingman.platforms import platform_for_url
 
-    url = (url or Prompt.ask("Thread URL")).strip()
+    url = (url or ui.ask("Thread URL")).strip()
     platform = platform or platform_for_url(url) or "reddit"
     svc = _services()
     plat = svc.platform(platform)
     drafter = svc.drafter(plat)  # fails early (before any Claude call) if there's no profile yet
 
-    with console.status("Loading the thread…"):
+    with console.status("Loading the conversation…"):
         thread = plat.thread_from_url(url)
     if thread is None:
         thread = _thread_from_paste(svc, platform, url, editor)
     if svc.store.thread_status(thread.key) == "posted" and \
-            not Confirm.ask("You've already replied here. Continue?", default=False):
+            not ui.confirm("You've already replied here. Draft another reply?"):
         raise typer.Exit()
     svc.store.save_pasted(thread)
-    console.print(f"[dim]Read: {len(thread.top_comments)} replies, "
-                  f"{len(thread.source_rules) or 'no'} community rules.[/]")
     ReviewSession(plat, svc.store, drafter, svc.settings.pacing, svc.settings.profile.private_terms,
                   max_chars=svc.max_post_chars(plat), ask_rating=svc.settings.drafting.ask_rating) \
         .review(thread, single=True)
 
 
-@app.command()
+@app.command(rich_help_panel="Write")
 def post(
     topic: str = typer.Argument(None, help="What to post about (prompted if omitted, unless --blog is given)."),
     blog: str = typer.Option(None, "--blog", help="Share one of your blog posts: its URL."),
     notes: str = typer.Option("", help="Extra points you want in the post."),
     platform: str = typer.Option("bluesky", "--platform", "-p", help="Where to post."),
 ):
-    """Draft a new post in your voice (not a reply): about a topic, or sharing a blog post.
-
-    Same review keys as replies: pick, edit, regenerate, then p to publish after you confirm.
-    """
+    """Draft a new post in your voice (not a reply): about a topic, or sharing a blog post."""
     from wingman.core.composer import compose_target
     from wingman.core.review import ReviewSession
     from wingman.sources.web import fetch_article
@@ -245,7 +245,7 @@ def post(
         with console.status("Reading the article…"):
             article, link = fetch_article(blog)
         topic = topic or link.title
-    topic = (topic or Prompt.ask("What do you want to post about?")).strip()
+    topic = (topic or ui.ask("What do you want to post about?")).strip()
     if not topic:
         raise WingmanError("Nothing to post about.")
 
@@ -257,9 +257,15 @@ def post(
                   new_post=True, link=link).review(target, single=True)
 
 
-@app.command()
-def scan(platform: str = PlatformOpt, show: int = typer.Option(10, help="How many top results to list.")):
-    """Fetch new/rising threads and rank them against your profile (API mode)."""
+@app.command(rich_help_panel="Find & review")
+def scan(
+    platform: str = PlatformOpt,
+    show: int = typer.Option(20, help="How many top results to list."),
+    page_size: int = typer.Option(None, "--page-size", help="Results per page (default: what fits your terminal)."),
+    rerank: bool = typer.Option(False, "--rerank", help="Rank already-seen posts again (e.g. after updating your "
+                                                       "profile). Posts you skipped, queued or posted are left alone."),
+):
+    """Find new posts on your topics and rank them against your profile."""
     from wingman.core.ranker import rank
 
     svc = _services()
@@ -269,34 +275,28 @@ def scan(platform: str = PlatformOpt, show: int = typer.Option(10, help="How man
 
     now = now_utc()
     since = now - timedelta(hours=settings.get("max_age_hours", 12))
-    with console.status(f"Scanning {', '.join(settings['sources'])}…"):
+    hours = settings.get("max_age_hours", 12)
+    ui.heading(f"Scanning {platform}", f"{len(settings['sources'])} sources · last {hours}h")
+    with console.status("Searching…"):
         threads = plat.discover(settings["sources"], since, settings.get("per_source_limit", 25))
-    known = svc.store.known_keys(platform)
+    known = svc.store.known_keys(platform, acted_on_only=rerank)
     fresh = [t for t in threads if t.key not in known]
-    console.print(f"Found {len(threads)} threads, {len(fresh)} new.")
-    if not fresh:
-        return
-    ranked = rank(svc.llm, profile_brief, settings.get("keywords", []), fresh, now, progress=_progress)
-    for r in ranked:
-        svc.store.save_ranked(r)
-
-    table = Table(title="Top opportunities", title_justify="left")
-    for col in ("score", "rel", "opp", "community", "title", "angle"):
-        table.add_column(col, overflow="fold")
-    for r in sorted(ranked, key=lambda r: r.final, reverse=True)[:show]:
-        table.add_row(f"{r.final:.2f}", str(r.relevance), f"{r.opportunity:.2f}", r.thread.source,
-                      r.thread.title[:70], r.angle[:80])
-    console.print(table)
-    console.print("Run [bold]wingman review[/] to go through them.")
+    ranked = []
+    if fresh:
+        with console.status(f"Ranking {len(fresh)} posts…"):
+            ranked = rank(svc.llm, profile_brief, settings.get("keywords", []), fresh, now)
+        for r in ranked:
+            svc.store.save_ranked(r)
+    views.scan_results(len(threads), len(fresh), ranked, show, rerank, page_size)
 
 
-@app.command()
+@app.command(rich_help_panel="Find & review")
 def review(
     platform: str = PlatformOpt,
     limit: int = typer.Option(10, help="Max threads to review this session."),
     min_score: float = typer.Option(0.5, help="Only threads with a combined score at or above this (0-1)."),
 ):
-    """Go through the best scanned threads, pick/edit a draft, and post what you approve."""
+    """Go through the best scanned posts: pick or edit a draft, and post what you approve."""
     from wingman.core.review import ReviewSession
 
     svc = _services()
@@ -308,23 +308,17 @@ def review(
                   ask_rating=svc.settings.drafting.ask_rating).run(items)
 
 
-@app.command()
+@app.command(rich_help_panel="Find & review")
 def queue(platform: str = typer.Option(None, "--platform", "-p")):
-    """List approved replies waiting for their pacing slot (API mode)."""
+    """List approved replies waiting for their pacing slot."""
     rows = _services().store.queued_posts(platform)
     if not rows:
-        console.print("Queue is empty.")
+        ui.info("Nothing queued.")
         return
-    table = Table()
-    for col in ("id", "platform", "community", "due", "text"):
-        table.add_column(col, overflow="fold")
-    for r in rows:
-        due = datetime.fromisoformat(r["due_at"]).astimezone().strftime("%a %H:%M") if r["due_at"] else "-"
-        table.add_row(str(r["id"]), r["platform"], r["source"], due, r["text"][:80])
-    console.print(table)
+    views.queue(rows)
 
 
-@app.command()
+@app.command(rich_help_panel="Find & review")
 def flush(platform: str = PlatformOpt):
     """Post queued replies whose time has come (you already approved them)."""
     from wingman.core.pacing import next_allowed
@@ -333,119 +327,95 @@ def flush(platform: str = PlatformOpt):
     due = [r for r in svc.store.queued_posts(platform)
            if r["due_at"] and datetime.fromisoformat(r["due_at"]) <= now_utc()]
     if not due:
-        console.print("Nothing due yet.")
+        ui.info("Nothing due yet.")
         return
     plat = svc.platform(platform)
+    ui.heading("Posting queued replies", f"{len(due)} due")
     for r in due:
         if next_allowed(svc.store, platform, r["source"], svc.settings.pacing):
-            console.print("Pacing limit reached; run flush again later.")
+            ui.warn("You've hit your posting pace; run flush again later.")
             break
-        console.print(f"[bold]{r['source']}[/]: {r['text'][:120]}")
-        if not Confirm.ask("Post it?", default=True):
+        console.print(f"[accent]{escape(r['source'])}[/]  {escape(r['text'][:120])}")
+        if not ui.confirm("Post it?", default=True):
             continue
         try:
-            post_url = plat.submit(Reply(platform, r["thread_key"].split(":", 1)[1], r["source"], r["text"]))
+            with console.status("Posting…"):
+                post_url = plat.submit(Reply(platform, r["thread_key"].split(":", 1)[1], r["source"], r["text"]))
         except Exception as e:  # noqa: BLE001 - record any platform failure and continue with the rest
             svc.store.mark_post(r["id"], "failed", error=str(e))
-            console.print(f"[red]Failed:[/] {e}")
+            ui.error(f"Failed: {escape(str(e))}")
             continue
         svc.store.mark_post(r["id"], "posted", url=post_url)
         svc.store.set_status(r["thread_key"], "posted")
-        console.print(f"[green]Posted:[/] {post_url}")
+        ui.ok(f"Posted · [link={post_url}]{post_url}[/link]")
 
 
 # ---------------------------------------------------------------- reporting
 
 
-@app.command()
+@app.command(rich_help_panel="Insights")
 def stats(
     platform: str = PlatformOpt,
     insights: bool = typer.Option(False, help="Ask Claude what makes your best comments work; "
                                               "the result feeds future drafts."),
 ):
-    """Your activity (API mode: karma breakdown by community, hour and length)."""
-    from wingman.core.stats import show_activity, show_stats, write_learnings
+    """Your activity: likes/karma by community, hour and length."""
+    from wingman.core.stats import summarize, write_learnings
 
     svc = _services()
     plat = svc.platform(platform)
     try:
-        with console.status("Fetching your comments…"):
+        with console.status("Fetching your posts…"):
             svc.store.save_activity(plat.my_activity(limit=1000))
     except WingmanError as e:
-        console.print(f"[yellow]Could not refresh from {platform} ({e}); showing saved data.[/]")
+        ui.warn(f"Couldn't refresh from {platform} ({escape(str(e))}); showing saved data.")
     items = svc.store.activity(platform)
     if not plat.has_scores:
         if not items:
             items = svc.store.logged_posts(platform)
-            console.print("[dim]Showing replies you've posted through wingman.[/]")
-        show_activity(items)
+            ui.muted("Showing replies you've posted through wingman.")
+        if items:
+            views.activity(items)
+        else:
+            ui.info("No comments found yet.")
         if insights:
-            console.print("[yellow]--insights needs vote counts, which require Reddit API access.[/]")
+            ui.warn("--insights needs vote counts, which this platform mode doesn't provide.")
         return
-    show_stats(items, svc.store.wingman_post_urls())
-    if insights and items:
+    summary = summarize(items, svc.store.wingman_post_urls())
+    if summary is None:
+        ui.info("No comments found yet.")
+        return
+    views.stats(summary)
+    if insights:
         with console.status("Analysing what works…"):
             path = write_learnings(svc.llm, items, svc.cfg.data_dir)
-        console.print(f"\n{path.read_text()}\n[green]Saved to {path}; drafts will use it from now on.[/]")
+        views.learnings(path.read_text())
+        ui.ok(f"Saved to {path}; drafts will use it from now on.")
 
 
-@app.command()
+@app.command(rich_help_panel="Insights")
 def cost():
-    """What wingman has spent on Claude, by task and model (estimates; the Console is authoritative)."""
+    """What wingman has spent on Claude, by task and model."""
     from wingman.core.usage import summarize
 
     entries = _services().usage_log.entries()
     if not entries:
-        console.print("No usage recorded yet.")
+        ui.info("No usage recorded yet.")
         return
-    s = summarize(entries, datetime.now(UTC).astimezone())
-    console.print(f"[bold]Today[/] ${s.today:.2f} · [bold]This month[/] ${s.month:.2f} · "
-                  f"[bold]All time[/] ${s.all_time:.2f}  ({s.requests} requests)")
-    table = Table(title="By task", title_justify="left")
-    for col in ("task", "model", "requests", "avg in", "avg out", "avg cost", "total"):
-        table.add_column(col, justify="left" if col in ("task", "model") else "right")
-    for t in s.by_task:
-        table.add_row(t.task, t.model, str(t.requests), f"{t.avg_input / 1000:.1f}K", f"{t.avg_output / 1000:.1f}K",
-                      f"${t.total_cost / t.requests:.3f}", f"${t.total_cost:.2f}")
-    console.print(table)
-    console.print("[dim]Estimates from list prices; see platform.claude.com for your actual balance.[/]")
+    views.cost(summarize(entries, datetime.now(UTC).astimezone()))
 
 
-@app.command("quality")
+@app.command("quality", rich_help_panel="Insights")
 def quality_report(platform: str = typer.Option(None, "--platform", "-p", help="Only this platform.")):
     """How good the drafts are, from your ratings: by model, by platform, and what tends to be off."""
     from wingman.core import quality
 
     s = quality.summarize(_services().store.ratings(platform))
     if s is None:
-        console.print("No ratings yet. After each thread in `wingman draft` / `review`, rate the drafts 1-5.")
+        ui.info("No ratings yet. After each thread in [accent]draft[/], [accent]review[/] or [accent]post[/], "
+                "rate the drafts 1–5.")
         return
-    sim = f" · drafts kept {s.avg_similarity:.0%} intact on average when posted" if s.avg_similarity is not None else ""
-    console.print(f"[bold]{s.count} rated threads[/] · average [bold]{s.avg_rating:.1f}/5[/] · "
-                  f"{s.posted_pct:.0f}% posted{sim} · {s.avg_regenerations:.1f} regenerations per thread")
-
-    table = Table(title="Ratings", title_justify="left")
-    for col in ("rating", "meaning", "threads", "share"):
-        table.add_column(col, justify="left" if col == "meaning" else "right")
-    for score, n in s.distribution.items():
-        table.add_row(str(score), quality.SCALE[score], str(n), f"{100 * n / s.count:.0f}%")
-    console.print(table)
-
-    for title, groups in (("By model", s.by_model), ("By platform", s.by_platform)):
-        if len(groups) < 2 and title == "By platform":
-            continue
-        t = Table(title=title, title_justify="left")
-        for col in ("", "threads", "avg rating", "posted", "kept intact"):
-            t.add_column(col, justify="left" if not col else "right")
-        for g in groups:
-            kept = f"{g.avg_similarity:.0%}" if g.avg_similarity is not None else "-"
-            t.add_row(g.name, str(g.count), f"{g.avg_rating:.1f}", f"{g.posted_pct:.0f}%", kept)
-        console.print(t)
-    if s.issues:
-        console.print("[bold]What was off[/] (ratings of 3 or lower): "
-                      + ", ".join(f"{issue} ×{n}" for issue, n in s.issues))
-    if s.count < 20:
-        console.print(f"[dim]Only {s.count} ratings so far; the numbers settle after about 20-30 threads.[/]")
+    views.quality(s)
 
 
 # ---------------------------------------------------------------- entry point
@@ -458,11 +428,15 @@ def main() -> None:
     try:
         app()
     except NotReadyError as e:
-        console.print(f"[yellow]{e}[/]")
+        ui.warn(escape(str(e)))
         raise SystemExit(1) from None
     except WingmanError as e:
-        console.print(f"[red]{e}[/]")
+        ui.error(escape(str(e)))
         raise SystemExit(1) from None
+    except (KeyboardInterrupt, EOFError):
+        console.print()
+        ui.muted("Stopped.")
+        raise SystemExit(130) from None
 
 
 if __name__ == "__main__":

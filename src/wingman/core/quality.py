@@ -17,6 +17,7 @@ SCALE = {
     2: "rewrote it / used only the idea",
     1: "unusable or wrong",
 }
+SHORT = {5: "as-is", 4: "light edit", 3: "heavy edit", 2: "rewrote", 1: "unusable"}
 ISSUES = {"f": "facts", "v": "voice", "r": "relevance", "l": "length", "o": "other"}
 LOW_RATING = 3  # at or below this, ask what was off
 

@@ -24,7 +24,8 @@ non-obvious reply, based on their profile below.
 0-2 = off-topic, a meme/rant/low-effort post, or not something to wade into.
 
 Bonus for {keywords}.
-For each thread give a one-line `angle`: the specific thing they could contribute.
+For each thread give a one-line `angle`: the specific thing they could contribute. Write it to the person \
+directly (\"you could…\", never \"he\"/\"she\"/\"they\"), at most ~20 words.
 
 PROFILE
 {profile}"""

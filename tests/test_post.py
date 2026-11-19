@@ -79,11 +79,11 @@ def test_new_post_mode_publishes_and_checks_the_link(store, monkeypatch):
     store.save_pasted(target)
 
     confirms = iter([False])  # "draft doesn't include the article link. Post anyway?" -> no
-    monkeypatch.setattr("wingman.core.review.Confirm.ask", lambda *a, **k: next(confirms))
+    monkeypatch.setattr("wingman.ui.confirm", lambda *a, **k: next(confirms))
     assert session._post(target, "A post without the link") is None
     assert client.calls == []
 
-    monkeypatch.setattr("wingman.core.review.Confirm.ask", lambda *a, **k: True)  # "Post now?" -> yes
+    monkeypatch.setattr("wingman.ui.confirm", lambda *a, **k: True)  # "Post now?" -> yes
     assert session._post(target, f"Toggles at a seam: {ARTICLE_URL}") == "posted"
     method, body = client.calls[-1]
     assert method == "com.atproto.repo.createRecord" and "reply" not in body["record"]

@@ -52,3 +52,11 @@ def test_pacing_enforces_hourly_limit_after_the_gap(store, thread):
     later = now_utc() + timedelta(minutes=30)  # past the 10-minute gap, still inside the hour
     wait = next_allowed(store, "reddit", "java", RULES, now=later)
     assert wait is not None and wait > later
+
+
+def test_known_keys_acted_on_only_excludes_still_ranked_threads(store, thread):
+    store.save_ranked(RankedThread(thread, relevance=8, opportunity=0.5, final=0.71, angle="a"))
+    assert store.known_keys(thread.platform) == {thread.key}
+    assert store.known_keys(thread.platform, acted_on_only=True) == set()  # rerank may score it again
+    store.set_status(thread.key, "skipped")
+    assert store.known_keys(thread.platform, acted_on_only=True) == {thread.key}  # but never resurrect a skip
