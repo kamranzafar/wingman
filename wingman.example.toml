@@ -110,3 +110,13 @@ max_age_hours = 12
 per_source_limit = 25       # posts fetched per listing
 # listings = ["new", "rising"]      # "manual" mode: which listings to read
 # request_delay_seconds = 2.0       # "manual" mode: pause between feed requests
+
+[platforms.hackernews]
+enabled = false
+# Hacker News, read through the public Algolia search API. HN has no posting API: wingman drafts,
+# you edit, then it copies the text and opens the thread (or the submit form) for you to submit.
+# Sources: search words ("postgres"), "@ask", "@show", "@front" (front page), or "@ask kafka".
+sources = ["@ask", "postgres", "kafka"]
+max_age_hours = 24          # HN moves fast; a day-old story has mostly finished its conversation
+per_source_limit = 50       # stories fetched per source
+# min_points = 0            # skip stories with fewer points (e.g. 3 to skip ones nobody has upvoted)

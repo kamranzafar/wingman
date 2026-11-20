@@ -16,12 +16,12 @@ from importlib import import_module
 from wingman.errors import ConfigError
 from wingman.platforms.base import Platform
 
-PLATFORMS = ("reddit", "bluesky", "mastodon", "github")
+PLATFORMS = ("reddit", "bluesky", "mastodon", "github", "hackernews")
 # Keys every platform section accepts (read by the scan/review commands and the config).
 COMMON = frozenset({"enabled", "sources", "keywords", "max_age_hours", "per_source_limit"})
 # Which platform a pasted thread URL belongs to, so `wingman draft <url>` needs no --platform.
 URL_HOSTS = {"reddit.com": "reddit", "www.reddit.com": "reddit", "old.reddit.com": "reddit",
-             "redd.it": "reddit", "bsky.app": "bluesky"}
+             "redd.it": "reddit", "bsky.app": "bluesky", "news.ycombinator.com": "hackernews"}
 
 
 def platform_for_url(url: str) -> str | None:

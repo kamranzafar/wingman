@@ -30,8 +30,8 @@ profile_app = typer.Typer(help="Build or view your interest/voice profile.", no_
 app.add_typer(profile_app, name="profile")
 
 PlatformOpt = typer.Option(None, "--platform", "-p", show_default=False,
-                           help="reddit, bluesky, mastodon or github (default: default_platform in wingman.toml, "
-                                "else the first platform configured there).")
+                           help="reddit, bluesky, mastodon, github or hackernews (default: default_platform in "
+                                "wingman.toml, else the first platform configured there).")
 
 
 def _services() -> Services:
@@ -224,7 +224,8 @@ def draft(
     """Draft a reply to one post you found yourself.
 
     Bluesky, Mastodon and GitHub Discussions: just pass the post's link. Reddit (paste mode): on the
-    thread page, select all and copy first, then run [accent]wingman draft <url>[/].
+    thread page, select all and copy first, then run [accent]wingman draft <url>[/]. Hacker News: pass
+    a story link, or a comment link to reply to that comment.
     """
     from wingman.core.review import ReviewSession
     from wingman.platforms import platform_for_url
@@ -263,7 +264,7 @@ def post(
     svc = _services()
     platform = svc.cfg.platform_name(platform)
     plat = svc.platform(platform)
-    if plat.posting != "api":
+    if plat.posting != "api" and not hasattr(plat, "new_post_url"):
         raise WingmanError(f"New posts need a platform wingman can post to; {platform} isn't one in this mode.")
 
     article = link = None
@@ -291,7 +292,7 @@ def scan(
     rerank: bool = typer.Option(False, "--rerank", help="Rank already-seen posts again (e.g. after updating your "
                                                        "profile). Posts you skipped, queued or posted are left alone."),
     topics: list[str] = typer.Option(None, "--topic", "-t", help="Scan this instead of the configured sources "
-                                     "(repeat for more): a search term, #hashtag, owner/repo or subreddit, "
+                                     "(repeat for more): a search term, #hashtag, owner/repo, subreddit or @ask/@show, "
                                      "depending on the platform."),
 ):
     """Find new posts on your topics and rank them against your profile.

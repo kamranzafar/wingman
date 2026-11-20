@@ -39,6 +39,10 @@ class Platform(Protocol):
         """Create a new standalone post (not a reply). Only after the user approves it. Returns a URL."""
         ...
 
+    # Optional, for posting = "manual" platforms that take new posts: the web page to open for one
+    # (`wingman post` copies the text and opens it). Absent -> new posts need posting = "api".
+    # def new_post_url(self, title: str, link: LinkCard | None = None) -> str: ...
+
     def my_activity(self, limit: int) -> list[ActivityItem]:
         """The user's own recent comments with their scores."""
         ...

@@ -13,7 +13,7 @@ A terminal copilot for online communities. wingman finds conversations where **y
 real to add, drafts replies in **your** voice from your own writing, and posts **only what you
 approve**, one reply at a time.
 
-It works with **Bluesky**, **Mastodon**, **GitHub Discussions** and **Reddit**. Each platform is a
+It works with **Bluesky**, **Mastodon**, **GitHub Discussions**, **Reddit** and **Hacker News**. Each platform is a
 small adapter, so more can be added.
 
 ```
@@ -49,6 +49,7 @@ limits cap how often you post, and drafts never invent experiences for you.
 | **GitHub Discussions** | repos, discussion searches | ✓ markdown | ✓ comments | upvotes | token, or a logged-in `gh` CLI |
 | **Reddit**, `paste` mode (default) | you browse | ✓ | you paste it | replies you log | none |
 | **Reddit**, `api` mode | subreddits | ✓ | ✓ API | karma | Reddit API approval |
+| **Hacker News** | searches, Ask/Show HN, front page | ✓ replies and posts | you paste it | your comments | none |
 
 ## Requirements
 
@@ -198,6 +199,32 @@ skipped. Drafts use markdown and code blocks, and see the discussion's category 
 comments, with the marked answer first. Discussions move slowly, so the example uses a two-week
 `max_age_hours`.
 
+### Hacker News
+
+Scan, draft replies and new posts, then submit them yourself: HN has no posting API. When you
+press `p`, wingman copies your final text and opens the thread (or, for `wingman post`, HN's submit
+form with the title and link filled in); you paste, check and submit. Edit drafts until they're
+yours: HN's [guidelines](https://news.ycombinator.com/newsguidelines.html) ask for no generated or
+AI-edited text, and the community is quick to spot it.
+
+1. No credentials needed: wingman reads the public [Algolia HN Search API](https://hn.algolia.com/api).
+   Optionally set `HN_USERNAME` in `.env` so your own stories are skipped and `stats` lists your comments.
+2. In `[platforms.hackernews]`: `enabled = true`, and `sources` as search words (`"postgres"`),
+   `"@ask"`, `"@show"`, `"@front"` (front page), or a shortcut with words (`"@ask kafka"`).
+
+```bash
+wingman scan -p hackernews
+wingman scan -p hackernews -t "@show rust"
+wingman draft https://news.ycombinator.com/item?id=12345     # a story, or a comment to reply to
+wingman post -p hackernews "Ask HN: How do you retire feature flags?"
+wingman post -p hackernews --blog https://example.com/post   # submit your post as a link
+```
+
+Options: `min_points` (default `0`). Drafts are plain text (HN has no markdown) and see the story,
+its link and the most-discussed top-level comments. For a new post, the topic becomes the title
+(the article's title when sharing a blog post; HN allows 80 characters), so phrase it as you want
+it to appear. HN hides comment scores, so `stats` shows where and when you comment, not votes.
+
 ### Reddit
 
 Reddit's [Responsible Builder Policy](https://support.reddithelp.com/hc/en-us/articles/42728983564564-Responsible-Builder-Policy)
@@ -331,7 +358,8 @@ wingman helps you take part in communities. It doesn't take part for you. Please
 **Your responsibilities**
 
 - **Follow each platform's terms and each community's rules.** Some communities ban AI-assisted
-  posts, and Stack Overflow is one; wingman deliberately doesn't support it. When in doubt,
+  posts. Stack Overflow is one, and wingman deliberately doesn't support it. Hacker News's guidelines
+  also ask for no generated or AI-edited text; wingman drafts there, but what you post is on you. When in doubt,
   disclose, or write the reply yourself.
 - **Only post what you'd stand behind.** Edit drafts until they're true and yours. Don't use
   wingman to promote, astroturf, manipulate votes, or post from multiple accounts.

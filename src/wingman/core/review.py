@@ -276,13 +276,18 @@ class ReviewSession:
             local = wait_until.astimezone().strftime("%H:%M")
             if not ui.confirm(f"You've hit your posting pace until {local}. Post anyway?"):
                 return None
+        page = self.platform.new_post_url(thread.title, self.link) if self.new_post else thread.url
         if clipboard.copy(text):
-            ui.ok("Copied to your clipboard. Opening the thread…")
+            ui.ok(f"Copied to your clipboard. Opening the {'submit page' if self.new_post else 'thread'}…")
         else:
             ui.warn("No clipboard tool found: copy the text above by hand.")
-        webbrowser.open(thread.url)
-        ui.info("Check the community's rules, paste the reply and submit it.")
-        answer = ui.ask("Your comment's link [muted](enter if posted without it, x if you didn't post)[/]").strip()
+        webbrowser.open(page)
+        if self.new_post:
+            ui.info("Check the title, paste the text and submit it.")
+        else:
+            ui.info("Check the community's rules, paste the reply and submit it.")
+        what = "post" if self.new_post else "comment"
+        answer = ui.ask(f"Your {what}'s link [muted](enter if posted without it, x if you didn't post)[/]").strip()
         if answer.lower() == "x":
             return None
         self.store.record_post(self.platform.name, thread.source, thread.key, text, "posted", url=answer or None)
