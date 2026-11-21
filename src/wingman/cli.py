@@ -29,6 +29,10 @@ app = typer.Typer(help="Finds conversations you can add to and drafts replies in
 profile_app = typer.Typer(help="Build or view your interest/voice profile.", no_args_is_help=True)
 app.add_typer(profile_app, name="profile")
 
+from wingman.jobs.commands import jobs_app  # noqa: E402 - after `app`, which jobs.commands uses lazily
+
+app.add_typer(jobs_app, name="jobs", rich_help_panel="Jobs")
+
 PlatformOpt = typer.Option(None, "--platform", "-p", show_default=False,
                            help="reddit, bluesky, mastodon, github or hackernews (default: default_platform in "
                                 "wingman.toml, else the first platform configured there).")

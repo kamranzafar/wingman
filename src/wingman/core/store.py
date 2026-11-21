@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Kamran Zafar
 # SPDX-License-Identifier: Apache-2.0
 
-"""SQLite persistence: seen threads, rankings, the post log/queue, and activity snapshots."""
+"""SQLite persistence: seen threads, rankings, the post log/queue, activity snapshots, and job ads."""
 
 from __future__ import annotations
 
@@ -14,9 +14,11 @@ from typing import Literal
 
 from wingman.core.models import ActivityItem, Comment, RankedThread, Thread, now_utc
 from wingman.core.quality import Rating
+from wingman.jobs.models import Job, RankedJob
 
 ThreadStatus = Literal["ranked", "pasted", "skipped", "queued", "posted"]
 PostStatus = Literal["queued", "posted", "failed"]
+JobStatus = Literal["ranked", "pasted", "skipped", "drafted", "applied"]
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS threads (
@@ -65,6 +67,17 @@ CREATE TABLE IF NOT EXISTS ratings (
     regenerations INTEGER NOT NULL DEFAULT 0,
     issues TEXT NOT NULL DEFAULT '[]',       -- JSON list: facts, voice, relevance, length, other
     at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS jobs (
+    key TEXT PRIMARY KEY,
+    source TEXT NOT NULL,                    -- adzuna | paste
+    data TEXT NOT NULL,
+    fit INTEGER,
+    angle TEXT,
+    gaps TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'ranked',   -- ranked | pasted | skipped | drafted | applied
+    folder TEXT,                             -- where its application was exported
+    scanned_at TEXT NOT NULL
 );
 """
 
@@ -227,3 +240,55 @@ class Store:
         return [ActivityItem(platform=r["platform"], id=r["id"], source=r["source"], body=r["body"], score=r["score"],
                              created_at=datetime.fromisoformat(r["created_at"]), permalink=r["permalink"] or "")
                 for r in rows]
+
+    # jobs ----------------------------------------------------------------
+    def known_job_keys(self) -> set[str]:
+        return {r["key"] for r in self.db.execute("SELECT key FROM jobs")}
+
+    def save_job(self, job: Job, status: JobStatus, fit: int | None = None, angle: str = "",
+                 gaps: list[str] | None = None) -> None:
+        """Insert or refresh a job. Re-saving keeps its ranking (unless given) and any progress past 'ranked'."""
+        with self.db:
+            self.db.execute(
+                """INSERT INTO jobs (key, source, data, fit, angle, gaps, status, scanned_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(key) DO UPDATE SET
+                       data = excluded.data,
+                       fit = COALESCE(excluded.fit, jobs.fit),
+                       angle = CASE WHEN excluded.angle != '' THEN excluded.angle ELSE jobs.angle END,
+                       gaps = CASE WHEN excluded.gaps != '[]' THEN excluded.gaps ELSE jobs.gaps END,
+                       status = CASE WHEN jobs.status IN ('ranked', 'pasted') THEN excluded.status
+                                     ELSE jobs.status END""",
+                (job.key, job.source, job.to_json(), fit, angle, json.dumps(gaps or []), status,
+                 now_utc().isoformat()),
+            )
+
+    def save_ranked_job(self, r: RankedJob) -> None:
+        self.save_job(r.job, "ranked", r.fit, r.angle, r.gaps)
+
+    def job_queue(self, min_fit: int, limit: int, max_age_days: float | None = None) -> list[RankedJob]:
+        rows = self.db.execute("SELECT * FROM jobs WHERE status = 'ranked' AND fit >= ? ORDER BY fit DESC, "
+                               "scanned_at DESC", (min_fit,))
+        now, out = now_utc(), []
+        for r in rows:
+            job = Job.from_json(r["data"])
+            if max_age_days is None or job.age_days(now) <= max_age_days:
+                out.append(RankedJob(job, r["fit"], r["angle"] or "", json.loads(r["gaps"])))
+            if len(out) >= limit:
+                break
+        return out
+
+    def ranked_job(self, key: str) -> RankedJob | None:
+        r = self.db.execute("SELECT * FROM jobs WHERE key = ?", (key,)).fetchone()
+        if not r:
+            return None
+        return RankedJob(Job.from_json(r["data"]), r["fit"] or 0, r["angle"] or "", json.loads(r["gaps"]))
+
+    def job_status(self, key: str) -> JobStatus | None:
+        r = self.db.execute("SELECT status FROM jobs WHERE key = ?", (key,)).fetchone()
+        return r["status"] if r else None
+
+    def set_job_status(self, key: str, status: JobStatus, folder: str | None = None) -> None:
+        with self.db:
+            self.db.execute("UPDATE jobs SET status = ?, folder = COALESCE(?, folder) WHERE key = ?",
+                            (status, folder, key))

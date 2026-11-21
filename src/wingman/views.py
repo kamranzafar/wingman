@@ -208,3 +208,31 @@ def queue(rows: list[dict]) -> None:
         due = datetime.fromisoformat(r["due_at"]).astimezone().strftime("%a %H:%M") if r["due_at"] else "-"
         t.add_row(str(r["id"]), Text(f"{r['platform']} · {r['source']}", "accent"), due, Text(r["text"][:80]))
     console.print(t)
+
+
+def job_results(found: int, fresh: int, ranked: list, show: int, attribution: str = "") -> None:
+    """`wingman jobs scan`: the best-fitting new jobs."""
+    from wingman.jobs.models import RankedJob
+
+    ui.ok(f"Found {found} jobs · {fresh} new · ranked {len(ranked)}")
+    if not fresh and found:
+        ui.muted("  All of these were ranked before. Run [accent]wingman jobs review[/] to go through them.")
+    top: list[RankedJob] = sorted(ranked, key=lambda r: r.fit, reverse=True)[:show]
+    if top:
+        now = now_utc()
+        ui.heading("Best matches", f"{len(top)}")
+        t = ui.table(None, "#", "Fit", "Job", "Lead with / gaps", right=("#",))
+        t.expand = True
+        t.columns[2].ratio, t.columns[3].ratio = 3, 2
+        for n, r in enumerate(top, 1):
+            j = r.job
+            where = " · ".join(p for p in (j.company, j.location, j.salary(), f"{j.age_days(now):.0f}d ago") if p)
+            job_cell = Group(Text(_snippet(j.title, 100), style=f"bold link {j.url}"), Text(where, style="muted"),
+                             Text())
+            notes = Group(Text(r.angle, style="italic"),
+                          *([Text("gaps: " + "; ".join(r.gaps), style="warn")] if r.gaps else []))
+            t.add_row(str(n), Group(Text(f"{r.fit}/10"), ui.bar(r.fit / 10, 6)), job_cell, notes)
+        console.print(t)
+        ui.info("Next: [accent]wingman jobs review[/] to draft a tailored resume and cover letter. Titles are links.")
+    if attribution:
+        ui.muted(f"  {attribution}")

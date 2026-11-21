@@ -33,6 +33,7 @@ limits cap how often you post, and drafts never invent experiences for you.
 - [Quick start](#quick-start)
 - [Configuration](#configuration)
 - [Platform setup](#platform-setup)
+- [Jobs: tailored resumes and cover letters](#jobs-tailored-resumes-and-cover-letters)
 - [Command reference](#command-reference)
 - [How it works](#how-it-works)
 - [Cost](#cost)
@@ -249,6 +250,52 @@ has three modes (`mode` in `[platforms.reddit]`):
 
 No clipboard? `wingman draft <url> --editor` opens a template to fill in instead.
 
+## Jobs: tailored resumes and cover letters
+
+`wingman jobs` finds roles that match your criteria and drafts a **resume and cover letter tailored
+to each ad**, strictly from your own master CV. Nothing is submitted anywhere: wingman writes the
+files, and you apply on the job site yourself.
+
+| | Find jobs | Full ad text | Credentials |
+|---|---|---|---|
+| **Adzuna** (`jobs scan`) | your saved searches, ranked by fit | the API shares only the start of each ad: wingman asks you to copy the full ad when you draft | free key from [developer.adzuna.com](https://developer.adzuna.com) |
+| **Any job site, incl. SEEK** (`jobs draft <url>`) | you browse | copied from the page | none; wingman never contacts the site |
+
+SEEK has no API for job seekers and doesn't allow scraping, so it works by copy and paste, like
+Reddit's paste mode. Adzuna lists many of the same Australian roles and permits personal job search.
+
+**Setup**
+
+1. Write a **master CV**: everything you might want on a resume (all roles, achievements with
+   numbers, projects, skills). Save it as Word (.docx), PDF, Markdown or text, e.g. `data/cv.docx`.
+2. In `wingman.toml`, add a `[jobs]` section with `base_resume = "data/cv.docx"` and one
+   `[[jobs.searches]]` block per search (see [`wingman.example.toml`](https://github.com/kamranzafar/wingman/blob/main/wingman.example.toml)).
+3. For scanning, add `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` to `.env`.
+
+**Use**
+
+```bash
+wingman jobs scan                                  # your saved searches, ranked against your CV
+wingman jobs scan -w "platform engineer" --where Melbourne   # a one-off search
+wingman jobs review                                # draft, edit and export for the best matches
+wingman jobs draft https://www.seek.com.au/job/…   # an ad you copied (select all, copy, then run)
+```
+
+For each job you see its **fit** (0–10), what to **lead with**, and the **gaps** (requirements your
+CV doesn't show). Press `d` and Claude writes both documents from your CV and the ad. They're
+reordered and reworded for the role, using the ad's own terms where they're true. Where the ad asks for
+evidence your CV doesn't have, the draft leaves a `[your … here]` placeholder rather than inventing
+anything, and **export is blocked until you fill it in or remove it**.
+
+| key | action |
+|---|---|
+| `d` | draft the resume and cover letter |
+| `e` / `c` | edit the resume / cover letter in `$EDITOR` |
+| `r` | rewrite both with an instruction ("lead with the data platform work", "shorter letter") |
+| `x` | export to `applications/<date>-<company>-<role>/`: `resume.md`, `resume.docx`, `cover-letter.md`, `cover-letter.docx`, and `job.md` (the ad) |
+| `a` | mark as applied and open the ad |
+| `o` / `s` / `n` / `b` / `q` | open the ad / skip for good / next / back / quit |
+
 ## Command reference
 
 Every command accepts `--help`. `-p/--platform` defaults to `default_platform`, else the first
@@ -280,6 +327,14 @@ a draft may be for that run, overriding `max_draft_chars`; the platform's own li
 |---|---|
 | `wingman draft [URL] [-p] [--editor] [--max-chars N]` | draft a reply to one post you found yourself. The platform comes from the link. |
 | `wingman post [TOPIC] [--blog URL] [--notes TEXT] [-p] [--max-chars N]` | draft a new post (not a reply) about a topic, or sharing one of your blog posts. Bluesky and Mastodon. |
+
+**Jobs**
+
+| command | what it does |
+|---|---|
+| `wingman jobs scan [-w WHAT] [--where LOCATION] [--show N]` | search Adzuna (your `[[jobs.searches]]`, or a one-off `--what`) and rank new jobs against your master CV |
+| `wingman jobs review [--limit N] [--min-fit 6]` | go through your best matches: draft, edit and export a tailored resume and cover letter |
+| `wingman jobs draft [URL] [--editor]` | draft for a job ad you copied from any site (SEEK included) |
 
 **Insights**
 
@@ -335,6 +390,8 @@ models on the high-volume work. Typical costs from real use with the default mod
 | ranking (`scan`), per 20 posts | Haiku | ≈ $0.001 |
 | drafting, per thread (2 drafts) | Sonnet | ≈ $0.02 |
 | profile build | Sonnet | once; one larger request |
+| ranking jobs (`jobs scan`), per 20 jobs | Haiku | ≈ $0.003 |
+| resume + cover letter, per job | Sonnet | ≈ $0.07–0.10 (a rewrite costs about the same) |
 
 `wingman cost` shows your actual spend by task and model. Lower it with fewer `drafts`, a cheaper
 `draft_model`, or fewer, more focused `sources`.
@@ -379,6 +436,9 @@ wingman helps you take part in communities. It doesn't take part for you. Please
   `private_terms` (employer, client or product names) are replaced with a neutral placeholder in
   ranking and drafting prompts. Profile building reads your sources unchanged, so leave anything
   sensitive out of `[profile] files` and `pages`.
+- **Jobs:** your master CV is sent to Claude **as it is, employer names included**, because a
+  resume needs them; `private_terms` don't apply to `wingman jobs`. Searches go to Adzuna with your
+  Adzuna key. Exported applications are saved in `applications/` (git-ignored).
 - **Sent to each platform:** only the requests needed to read posts and publish what you approve.
   Each token is sent only to its own platform's host. `check` prints status, never tokens.
 - Your config and secrets are git-ignored in this repo. Don't commit `wingman.toml`, `.env` or `data/`.

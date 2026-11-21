@@ -10,7 +10,7 @@ default_platform = ""
 blog_url = ""               # e.g. "https://example.com/blog"
 blog_max_pages = 15         # how many blog posts to read when building the profile
 pages = []                  # background pages read as-is, e.g. ["https://example.com/about"]
-files = []                  # local .pdf/.md/.txt, e.g. ["data/cv.pdf"] (LinkedIn: More -> Save to PDF)
+files = []                  # local .pdf/.docx/.md/.txt, e.g. ["data/cv.pdf"] (LinkedIn: More -> Save to PDF)
 github = ""                 # your GitHub username: public repos and READMEs count as evidence of what you build
 github_max_repos = 10       # most recently pushed, non-fork, non-archived repos to read
 link_blog = "when_directly_relevant"   # never | when_directly_relevant: may drafts link your blog posts?
@@ -25,6 +25,7 @@ rank_model = "claude-haiku-5-5"     # scoring posts in `wingman scan`
 profile_model = "claude-sonnet-5-5" # `wingman profile build`
 extract_model = "claude-haiku-5-5"  # reading a copied thread page (`wingman draft`, Reddit paste mode)
 draft_model = "claude-sonnet-5-5"   # writing reply drafts
+resume_model = "claude-sonnet-5-5"  # tailored resumes and cover letters (`wingman jobs`)
 effort = "medium"                   # low | medium | high | xhigh | max
 
 [drafting]
@@ -120,3 +121,24 @@ sources = ["@ask", "postgres", "kafka"]
 max_age_hours = 24          # HN moves fast; a day-old story has mostly finished its conversation
 per_source_limit = 50       # stories fetched per source
 # min_points = 0            # skip stories with fewer points (e.g. 3 to skip ones nobody has upvoted)
+
+[jobs]
+# `wingman jobs`: find roles and draft a tailored resume + cover letter for each. Nothing is submitted:
+# wingman writes the files and you apply yourself. Scanning uses the Adzuna API (free key, in .env);
+# for SEEK or any other site, copy the ad page and run `wingman jobs draft <url>`.
+base_resume = ""            # your master CV (.docx, .pdf, .md or .txt): the ONLY source of facts for applications
+country = "au"              # Adzuna country code (au, gb, us, nz, ca, …)
+max_days_old = 7
+per_search_limit = 50       # jobs fetched per search
+exclude_companies = []      # e.g. recruiters you don't want to see
+min_fit = 6                 # `jobs review` shows jobs scoring at least this, 0-10
+output_dir = "applications" # one folder per application: resume/cover letter as .md and .docx
+
+# One block per saved search. Only `what` is required.
+# [[jobs.searches]]
+# what = "senior software engineer kafka"
+# where = "Sydney"
+# exclude = ["php"]
+# salary_min = 150000
+# permanent = true
+# full_time = true

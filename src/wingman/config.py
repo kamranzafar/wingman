@@ -36,7 +36,7 @@ class ProfileSettings(_Section):
     blog_max_pages: int = Field(15, ge=1)
     link_blog: Literal["never", "when_directly_relevant"] = "when_directly_relevant"
     pages: list[str] = []         # background pages read as-is (homepage, project sites)
-    files: list[str] = []         # local .pdf/.md/.txt (LinkedIn export, CV)
+    files: list[str] = []         # local .pdf/.docx/.md/.txt (LinkedIn export, CV)
     github: str = ""              # username
     github_max_repos: int = Field(10, ge=1, le=100)
     private_terms: list[str] = [] # never sent to the drafting model; posting blocked if present
@@ -48,11 +48,12 @@ class LLMSettings(_Section):
     profile_model: str = "claude-sonnet-5-5"
     extract_model: str = "claude-haiku-5-5"
     draft_model: str = "claude-sonnet-5-5"
+    resume_model: str = "claude-sonnet-5-5"   # tailored resumes and cover letters (`wingman jobs`)
     effort: Effort = "medium"
 
     def task_models(self) -> dict[str, str]:
         return {"profile": self.profile_model, "extract": self.extract_model, "draft": self.draft_model,
-                "rank": self.rank_model}
+                "rank": self.rank_model, "resume": self.resume_model}
 
 
 class DraftingSettings(_Section):
@@ -75,12 +76,34 @@ class PacingSettings(_Section):
     min_gap_minutes: int = Field(10, ge=0)
 
 
+class JobSearch(_Section):
+    """One saved job search (Adzuna). Only `what` is required."""
+    what: str = Field(min_length=1)            # keywords, e.g. "senior software engineer kafka"
+    where: str = ""                            # city, region or postcode
+    exclude: list[str] = []                    # drop ads mentioning these words
+    salary_min: int = Field(0, ge=0)
+    full_time: bool = False
+    permanent: bool = False
+
+
+class JobsSettings(_Section):
+    base_resume: str = ""                      # master CV (.docx/.md/.txt/.pdf): the only source of facts
+    country: str = Field("au", pattern=r"^[a-z]{2}$")  # Adzuna country code
+    searches: list[JobSearch] = []
+    exclude_companies: list[str] = []
+    max_days_old: int = Field(7, ge=1, le=60)
+    per_search_limit: int = Field(50, ge=1, le=200)
+    min_fit: int = Field(6, ge=0, le=10)       # `jobs review` shows jobs at or above this fit
+    output_dir: str = "applications"           # exported resumes and cover letters, one folder per job
+
+
 class Settings(_Section):
     default_platform: str = ""    # used when a command gets no --platform; else the first enabled platform
     profile: ProfileSettings = ProfileSettings()
     llm: LLMSettings = LLMSettings()
     drafting: DraftingSettings = DraftingSettings()
     pacing: PacingSettings = PacingSettings()
+    jobs: JobsSettings = JobsSettings()
     # Each platform adapter validates its own section, so these stay free-form here.
     platforms: dict[str, dict] = {}
 

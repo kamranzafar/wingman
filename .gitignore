@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 data/
 wingman.toml
+applications/
 .pytest_cache/
 .ruff_cache/
 .DS_Store
