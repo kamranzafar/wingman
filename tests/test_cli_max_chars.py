@@ -3,6 +3,7 @@
 
 from types import SimpleNamespace
 
+import typer
 from typer.testing import CliRunner
 
 from wingman import cli
@@ -21,9 +22,11 @@ def test_max_chars_overrides_the_configured_limit(monkeypatch):
 
 
 def test_max_chars_is_on_every_drafting_command():
-    for command in ("draft", "review", "post"):
-        result = CliRunner().invoke(cli.app, [command, "--help"], env={"COLUMNS": "200"})
-        assert "--max-chars" in result.output, command
+    # Check the registered options, not --help text: CI renders help with ANSI colour codes.
+    commands = typer.main.get_command(cli.app).commands
+    for name in ("draft", "review", "post"):
+        opts = {o for param in commands[name].params for o in param.opts}
+        assert {"--max-chars", "--length"} <= opts, name
 
 
 def test_max_chars_rejects_tiny_limits():
