@@ -11,3 +11,5 @@ wingman.toml
 # local tooling
 graphify-out/
 dist/
+.idea/
+*.iml
