@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="186" viewBox="0 0 760 186" role="img" aria-label="wingman">
+<title>wingman</title>
+<style>
+  text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; white-space: pre; }
+  .wing { fill: #58a6ff; }
+  .word { fill: #2ea043; }
+  .tag { fill: #8b949e; font-size: 15px; }
+</style>
+<text x="16" y="31" font-size="16" xml:space="preserve"><tspan class="wing"> ________________  </tspan><tspan class="word">            _</tspan></text>
+<text x="16" y="51" font-size="16" xml:space="preserve"><tspan class="wing"> \_______________\ </tspan><tspan class="word"> __      __(_) _ __    __ _  _ __ ___    __ _  _ __</tspan></text>
+<text x="16" y="71" font-size="16" xml:space="preserve"><tspan class="wing">   \____________\  </tspan><tspan class="word"> \ \ /\ / /| || '_ \  / _` || '_ ` _ \  / _` || '_ \</tspan></text>
+<text x="16" y="91" font-size="16" xml:space="preserve"><tspan class="wing">     \_________\   </tspan><tspan class="word">  \ V  V / | || | | || (_| || | | | | || (_| || | | |</tspan></text>
+<text x="16" y="111" font-size="16" xml:space="preserve"><tspan class="wing">       \______\    </tspan><tspan class="word">   \_/\_/  |_||_| |_| \__, ||_| |_| |_| \__,_||_| |_|</tspan></text>
+<text x="16" y="131" font-size="16" xml:space="preserve"><tspan class="wing">                   </tspan><tspan class="word">                      |___/</tspan></text>
+<text class="tag" x="380" y="162" text-anchor="middle">your voice · real conversations · you approve every post</text>
+</svg>

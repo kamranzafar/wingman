@@ -1,13 +1,13 @@
-```text
- ________________              _
- \_______________\  __      __(_) _ __    __ _  _ __ ___    __ _  _ __
-   \____________\   \ \ /\ / /| || '_ \  / _` || '_ ` _ \  / _` || '_ \
-     \_________\     \ V  V / | || | | || (_| || | | | | || (_| || | | |
-       \______\       \_/\_/  |_||_| |_| \__, ||_| |_| |_| \__,_||_| |_|
-                                         |___/
+<p align="center">
+  <img src="assets/header.svg" alt="wingman: your voice, real conversations, you approve every post" width="760">
+</p>
 
-        your voice · real conversations · you approve every post
-```
+<p align="center">
+  <a href="https://github.com/kamranzafar/wingman/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/kamranzafar/wingman/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/kamranzafar/wingman/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/kamranzafar/wingman?color=2ea043"></a>
+  <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white">
+  <a href="LICENSE"><img alt="License Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
+</p>
 
 A terminal copilot for online communities. wingman finds conversations where **you** have something
 real to add, drafts replies in **your** voice from your own writing, and posts **only what you
