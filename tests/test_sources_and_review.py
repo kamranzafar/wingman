@@ -58,7 +58,7 @@ def session(store):
 
 @pytest.mark.parametrize(("text", "problem"), [
     ("We did this at ACME.", "ACME"),
-    ("x" * 1501, "Too long: 1,501 characters; your max_draft_chars is 1,500"),
+    ("x" * 1501, "Too long: 1,501 characters; your length limit is 1,500"),
     ("x" * 1500, None),
     ("In my case [your experience with Kafka here].", "placeholder"),
     ("Set snapshot.mode=when_needed.", None),

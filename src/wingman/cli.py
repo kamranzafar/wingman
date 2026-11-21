@@ -32,10 +32,16 @@ app.add_typer(profile_app, name="profile")
 PlatformOpt = typer.Option(None, "--platform", "-p", show_default=False,
                            help="reddit, bluesky, mastodon, github or hackernews (default: default_platform in "
                                 "wingman.toml, else the first platform configured there).")
+MaxCharsOpt = typer.Option(None, "--max-chars", "--length", min=200, max=10_000, show_default=False,
+                           help="Longest a draft may be, in characters, for this run (default: max_draft_chars "
+                                "in wingman.toml). The platform's own limit still applies.")
 
 
-def _services() -> Services:
-    return Services(on_usage=lambda line: ui.muted(f"  ⋯ {line}"))
+def _services(max_chars: int | None = None) -> Services:
+    svc = Services(on_usage=lambda line: ui.muted(f"  ⋯ {line}"))
+    if max_chars:  # --max-chars overrides [drafting] max_draft_chars for this run
+        svc.settings.drafting.max_draft_chars = max_chars
+    return svc
 
 
 def _skipped(items: list[str]) -> None:
@@ -220,6 +226,7 @@ def draft(
     platform: str = typer.Option(None, "--platform", "-p", help="Which platform (default: from the URL)."),
     editor: bool = typer.Option(False, "--editor", help="Paste the thread into your editor instead of "
                                                         "reading it from the clipboard."),
+    max_chars: int = MaxCharsOpt,
 ):
     """Draft a reply to one post you found yourself.
 
@@ -231,7 +238,7 @@ def draft(
     from wingman.platforms import platform_for_url
 
     url = (url or ui.ask("Thread URL")).strip()
-    svc = _services()
+    svc = _services(max_chars)
     platform = platform or platform_for_url(url) or svc.cfg.platform_name(None)
     plat = svc.platform(platform)
     drafter = svc.drafter(plat)  # fails early (before any Claude call) if there's no profile yet
@@ -255,13 +262,14 @@ def post(
     blog: str = typer.Option(None, "--blog", help="Share one of your blog posts: its URL."),
     notes: str = typer.Option("", help="Extra points you want in the post."),
     platform: str = PlatformOpt,
+    max_chars: int = MaxCharsOpt,
 ):
     """Draft a new post in your voice (not a reply): about a topic, or sharing a blog post."""
     from wingman.core.composer import compose_target
     from wingman.core.review import ReviewSession
     from wingman.sources.web import fetch_article
 
-    svc = _services()
+    svc = _services(max_chars)
     platform = svc.cfg.platform_name(platform)
     plat = svc.platform(platform)
     if plat.posting != "api" and not hasattr(plat, "new_post_url"):
@@ -337,11 +345,12 @@ def review(
     platform: str = PlatformOpt,
     limit: int = typer.Option(10, help="Max threads to review this session."),
     min_score: float = typer.Option(0.5, help="Only threads with a combined score at or above this (0-1)."),
+    max_chars: int = MaxCharsOpt,
 ):
     """Go through the best scanned posts: pick or edit a draft, and post what you approve."""
     from wingman.core.review import ReviewSession
 
-    svc = _services()
+    svc = _services(max_chars)
     platform = svc.cfg.platform_name(platform)
     plat = svc.platform(platform)
     items = svc.store.review_queue(platform, min_score, svc.cfg.platform_settings(platform).get("max_age_hours", 12),

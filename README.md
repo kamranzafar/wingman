@@ -252,7 +252,8 @@ No clipboard? `wingman draft <url> --editor` opens a template to fill in instead
 ## Command reference
 
 Every command accepts `--help`. `-p/--platform` defaults to `default_platform`, else the first
-enabled platform.
+enabled platform. `--max-chars N` (or `--length N`) on `draft`, `review` and `post` sets the longest
+a draft may be for that run, overriding `max_draft_chars`; the platform's own limit still applies.
 
 **Setup**
 
@@ -269,7 +270,7 @@ enabled platform.
 | command | what it does |
 |---|---|
 | `wingman scan [-p] [-t TOPIC]… [--rerank] [--show N] [--page-size N]` | find new posts on your sources, or on `--topic`s for this run only, and rank them by fit. Results are paged (`n`/`p`/`q`). `--rerank` scores already-seen posts again. |
-| `wingman review [-p] [--limit N] [--min-score 0.5]` | go through the best scanned posts: draft, edit, post or skip |
+| `wingman review [-p] [--limit N] [--min-score 0.5] [--max-chars N]` | go through the best scanned posts: draft, edit, post or skip |
 | `wingman queue [-p]` | approved replies waiting for a pacing slot |
 | `wingman flush [-p]` | post queued replies whose time has come |
 
@@ -277,8 +278,8 @@ enabled platform.
 
 | command | what it does |
 |---|---|
-| `wingman draft [URL] [-p] [--editor]` | draft a reply to one post you found yourself. The platform comes from the link. |
-| `wingman post [TOPIC] [--blog URL] [--notes TEXT] [-p]` | draft a new post (not a reply) about a topic, or sharing one of your blog posts. Bluesky and Mastodon. |
+| `wingman draft [URL] [-p] [--editor] [--max-chars N]` | draft a reply to one post you found yourself. The platform comes from the link. |
+| `wingman post [TOPIC] [--blog URL] [--notes TEXT] [-p] [--max-chars N]` | draft a new post (not a reply) about a topic, or sharing one of your blog posts. Bluesky and Mastodon. |
 
 **Insights**
 

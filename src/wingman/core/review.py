@@ -207,7 +207,7 @@ class ReviewSession:
         length = self.platform.constraints.length(text)
         if length > self.max_chars:
             whose = (f"{self.platform.name.title()}'s limit" if self.max_chars == self.platform.constraints.max_length
-                     else "your max_draft_chars")
+                     else "your length limit")
             return (f"Too long: {length:,} characters; {whose} is {self.max_chars:,}. "
                     "Press e to trim it, or r and ask for something like 'under 250 characters'.")
         if PLACEHOLDER_MARKER in text.lower():
