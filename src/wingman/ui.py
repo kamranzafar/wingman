@@ -20,6 +20,8 @@ from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
 
+from wingman.errors import WingmanError
+
 THEME = Theme({
     "accent": "bold cyan",
     "title": "bold",
@@ -209,3 +211,29 @@ def confirm(question: str, default: bool = False) -> bool:
 def ask(prompt: str, default: str = "") -> str:
     """Free-text input (instructions, links): a normal line prompt."""
     return Prompt.ask(f"[accent]›[/] {prompt}", default=default, show_default=bool(default), console=console)
+
+
+def edit(text: str, extension: str = ".md") -> str | None:
+    """Open `text` in $VISUAL/$EDITOR and return the result, or None if it wasn't saved."""
+    import shlex
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    windows = sys.platform == "win32"
+    editor = os.environ.get("VISUAL") or os.environ.get("EDITOR") or ("notepad" if windows else "vi")
+    fd, name = tempfile.mkstemp(suffix=extension, prefix="wingman-")
+    path = Path(name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+        before = path.stat().st_mtime_ns
+        try:
+            subprocess.run([*shlex.split(editor, posix=not windows), str(path)], check=True)
+        except (OSError, subprocess.CalledProcessError) as exc:
+            raise WingmanError(f"Couldn't run your editor ({editor}): {exc}") from exc
+        if path.stat().st_mtime_ns == before:
+            return None
+        return path.read_text(encoding="utf-8")
+    finally:
+        path.unlink(missing_ok=True)

@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
-import typer
 from rich import box
 from rich.markup import escape
 from rich.panel import Panel
@@ -137,11 +136,11 @@ class ReviewSession:
             if choice.isdigit():
                 sel.index, sel.own_text = int(choice) - 1, None
             elif choice == "e" and sel.text:
-                edited = typer.edit(sel.text, extension=".md")
+                edited = ui.edit(sel.text, extension=".md")
                 if edited is not None:
                     sel.own_text = edited.strip()
             elif choice == "w":
-                written = typer.edit("", extension=".md")
+                written = ui.edit("", extension=".md")
                 if written and written.strip():
                     sel.own_text = written.strip()
             elif choice == "r" and self.drafter:

@@ -207,7 +207,7 @@ def _thread_from_paste(svc: Services, platform: str, url: str, editor: bool):
                 ui.warn("That doesn't look like a thread. Paste it into the editor instead.")
                 extracted = None
     if extracted is None:
-        extracted = parse_template(typer.edit(EDITOR_TEMPLATE, extension=".md") or "")
+        extracted = parse_template(ui.edit(EDITOR_TEMPLATE, extension=".md") or "")
         if not extracted.found_thread:
             raise WingmanError("No thread text provided.")
     community = community or extracted.community or ui.ask("Which community is this in?")
